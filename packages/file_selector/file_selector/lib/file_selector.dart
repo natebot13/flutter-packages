@@ -7,12 +7,12 @@ import 'dart:async';
 import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
 
 export 'package:file_selector_platform_interface/file_selector_platform_interface.dart'
-    show XFile, XTypeGroup;
+    show FileSaveLocation, XFile, XTypeGroup;
 
 /// Opens a file selection dialog and returns the path chosen by the user.
 ///
 /// [acceptedTypeGroups] is a list of file type groups that can be selected in
-/// the dialog. How this is displayed depends on the pltaform, for example:
+/// the dialog. How this is displayed depends on the platform, for example:
 /// - On Windows and Linux, each group will be an entry in a list of filter
 ///   options.
 /// - On macOS, the union of all types allowed by all of the groups will be
@@ -44,7 +44,7 @@ Future<XFile?> openFile({
 /// user.
 ///
 /// [acceptedTypeGroups] is a list of file type groups that can be selected in
-/// the dialog. How this is displayed depends on the pltaform, for example:
+/// the dialog. How this is displayed depends on the platform, for example:
 /// - On Windows and Linux, each group will be an entry in a list of filter
 ///   options.
 /// - On macOS, the union of all types allowed by all of the groups will be
@@ -74,7 +74,7 @@ Future<List<XFile>> openFiles({
 /// Opens a save dialog and returns the target path chosen by the user.
 ///
 /// [acceptedTypeGroups] is a list of file type groups that can be selected in
-/// the dialog. How this is displayed depends on the pltaform, for example:
+/// the dialog. How this is displayed depends on the platform, for example:
 /// - On Windows and Linux, each group will be an entry in a list of filter
 ///   options.
 /// - On macOS, the union of all types allowed by all of the groups will be
@@ -92,17 +92,18 @@ Future<List<XFile>> openFiles({
 /// When not provided, the default OS label is used (for example, "Save").
 ///
 /// Returns `null` if the user cancels the operation.
-Future<String?> getSavePath({
+Future<FileSaveLocation?> getSaveLocation({
   List<XTypeGroup> acceptedTypeGroups = const <XTypeGroup>[],
   String? initialDirectory,
   String? suggestedName,
   String? confirmButtonText,
 }) async {
-  return FileSelectorPlatform.instance.getSavePath(
+  return FileSelectorPlatform.instance.getSaveLocation(
       acceptedTypeGroups: acceptedTypeGroups,
-      initialDirectory: initialDirectory,
-      suggestedName: suggestedName,
-      confirmButtonText: confirmButtonText);
+      options: SaveDialogOptions(
+          initialDirectory: initialDirectory,
+          suggestedName: suggestedName,
+          confirmButtonText: confirmButtonText));
 }
 
 /// Opens a directory selection dialog and returns the path chosen by the user.

@@ -1,16 +1,204 @@
+## 14.0.2
+
+- Fixes unwanted logs when `hierarchicalLoggingEnabled` was set to `true`.
+
+## 14.0.1
+
+- Updates the redirection documentation for clarity
+
+## 14.0.0
+
+- **BREAKING CHANGE**
+  - `GoRouteData`'s `onExit` now takes 2 parameters `BuildContext context, GoRouterState state`.
+
+## 13.2.4
+
+- Updates examples to use uri.path instead of uri.toString() for accessing the current location.
+
+## 13.2.3
+
+- Fixes an issue where deep links without path caused an exception
+
+## 13.2.2
+
+- Fixes restoreRouteInformation issue when GoRouter.optionURLReflectsImperativeAPIs is true and the last match is ShellRouteMatch
+
+## 13.2.1
+
+- Updates minimum supported SDK version to Flutter 3.16/Dart 3.2.
+- Fixes memory leaks.
+
+## 13.2.0
+
+- Exposes full `Uri` on `GoRouterState` in `GoRouterRedirect`
+
+## 13.1.0
+
+- Adds `topRoute` to `GoRouterState`
+- Adds `lastOrNull` to `RouteMatchList`
+
+## 13.0.1
+
+- Fixes new lint warnings.
+
+## 13.0.0
+
+- Refactors `RouteMatchList` and imperative APIs.
+- **BREAKING CHANGE**:
+  - RouteMatchList structure changed.
+  - Matching logic updated.
+
+## 12.1.3
+
+- Fixes a typo in `navigation.md`.
+
+## 12.1.2
+
+- Fixes an incorrect use of `extends` for Dart 3 compatibility.
+- Updates minimum supported SDK version to Flutter 3.10/Dart 3.0.
+
+## 12.1.1
+
+- Retains query parameters during refresh and first redirect.
+
+## 12.1.0
+
+- Adds an ability to add a custom codec for serializing/deserializing extra.
+
+## 12.0.3
+
+- Fixes crashes when dynamically updates routing tables with named routes.
+
+## 12.0.2
+
+- Fixes the problem that pathParameters is null in redirect when the Router is recreated.
+
+## 12.0.1
+
+- Fixes deep-link with no path on cold start.
+
+## 12.0.0
+
+- Adds ability to dynamically update routing table.
+- **BREAKING CHANGE**:
+  - The function signature of constructor of `RouteConfiguration` is updated.
+  - Adds a required `matchedPath` named parameter to `RouteMatch.match`.
+
+## 11.1.4
+
+- Fixes missing parameters in the type-safe routes topic documentation.
+
+## 11.1.3
+
+- Fixes missing state.extra in onException().
+
+## 11.1.2
+
+- Fixes a bug where the known routes and initial route were logged even when `debugLogDiagnostics` was set to `false`.
+
+## 11.1.1
+
+- Fixes a missing `{@end-tool}` doc directive tag for `GoRoute.name`.
+
+## 11.1.0
+
+- Adds optional parameter `overridePlatformDefaultLocation` to override initial route set by platform.
+
+## 11.0.1
+
+- Fixes the Android back button ignores top level route's onExit.
+
+## 11.0.0
+
+- Fixes the GoRouter.goBranch so that it doesn't reset extra to null if extra is not serializable.
+- **BREAKING CHANGE**:
+  - Updates the function signature of `GoRouteInformationProvider.restore`.
+  - Adds `NavigationType.restore` to `NavigationType` enum.
+
+## 10.2.0
+
+- Adds `onExit` to GoRoute.
+
+## 10.1.4
+
+- Fixes RouteInformationParser that does not restore full RouteMatchList if
+  the optionURLReflectsImperativeAPIs is set.
+
+## 10.1.3
+
+- Fixes an issue in the documentation that was using `state.queryParameters` instead of `state.uri.queryParameters`.
+
+## 10.1.2
+
+- Adds pub topics to package metadata.
+
+## 10.1.1
+
+- Fixes mapping from `Page` to `RouteMatch`s.
+- Updates minimum supported SDK version to Flutter 3.7/Dart 2.19.
+
+## 10.1.0
+
+- Supports setting `requestFocus`.
+
+## 10.0.0
+
+- **BREAKING CHANGE**:
+  - Replaces location, queryParameters, and queryParametersAll in GoRouterState with Uri.
+  - See [Migrating to 10.0.0](https://flutter.dev/go/go-router-v10-breaking-changes) or
+    run `dart fix --apply` to fix the breakages.
+
+## 9.1.1
+
+- Fixes a link in error handling documentation.
+
+## 9.1.0
+
+- Adds the parentNavigatorKey parameter to ShellRouteData and StatefulShellRouteData.
+- Fixes a typo in docs for `StatefulShellRoute.indexedStack(...)`.
+- Cleans some typos in the documentation and asserts.
+
+## 9.0.3
+
+- Adds helpers for go_router_builder for StatefulShellRoute support
+
+## 9.0.2
+
+- Exposes package-level privates.
+
+## 9.0.1
+
+- Allows redirect only GoRoute to be part of RouteMatchList.
+
+## 9.0.0
+
+- **BREAKING CHANGE**:
+  - Removes GoRouter.location. Use GoRouterState.of().location instead.
+  - GoRouter does not `extends` ChangeNotifier.
+  - [Migration guide](https://flutter.dev/go/go-router-v9-breaking-changes)
+- Reduces excessive rebuilds due to inherited look up.
+
+## 8.2.0
+
+- Adds onException to GoRouter constructor.
+
+## 8.1.0
+
+- Adds parent navigator key to ShellRoute and StatefulShellRoute.
+
 ## 8.0.5
 
 - Fixes a bug that GoRouterState in top level redirect doesn't contain complete data.
 
 ## 8.0.4
 
-- Updates documentations around `GoRouter.of`, `GoRouter.maybeOf`, and `BuildContext` extension. 
+- Updates documentations around `GoRouter.of`, `GoRouter.maybeOf`, and `BuildContext` extension.
 
 ## 8.0.3
 
 - Makes namedLocation and route name related APIs case sensitive.
 
-## 8.0.2 
+## 8.0.2
 
 - Fixes a bug in `debugLogDiagnostics` to support StatefulShellRoute.
 
@@ -149,7 +337,7 @@
 
 ## 6.0.5
 
-- Fixes [unnecessary_null_comparison](https://dart-lang.github.io/linter/lints/unnecessary_null_checks.html) lint warnings.
+- Fixes [unnecessary_null_comparison](https://dart.dev/lints/unnecessary_null_checks) lint warnings.
 
 ## 6.0.4
 
@@ -273,7 +461,7 @@
 
 - Fixes a bug where intermediate route redirect methods are not called.
 - GoRouter implements the RouterConfig interface, allowing you to call
-  MaterialApp.router(routerConfig: _myGoRouter) instead of passing
+  MaterialApp.router(routerConfig: \_myGoRouter) instead of passing
   the RouterDelegate, RouteInformationParser, and RouteInformationProvider
   fields.
 - **BREAKING CHANGE**
@@ -647,7 +835,7 @@
 - enable case-insensitive path matching while still preserving path and query
   parameter cases
 - change a lifetime of habit to sort constructors first as per
-  [sort_constructors_first](https://dart-lang.github.io/linter/lints/sort_constructors_first.html).
+  [sort_constructors_first](https://dart.dev/lints/sort_constructors_first).
   Thanks for the PR, [Abhishek01039](https://github.com/Abhishek01039)!
 - set the initial transition example route to `/none` to make pushing the 'fade
   transition' button on the first run through more fun

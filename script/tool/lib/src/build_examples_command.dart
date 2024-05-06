@@ -2,16 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:async';
-
 import 'package:file/file.dart';
-import 'package:platform/platform.dart';
 import 'package:yaml/yaml.dart';
 
 import 'common/core.dart';
+import 'common/output_utils.dart';
 import 'common/package_looping_command.dart';
 import 'common/plugin_utils.dart';
-import 'common/process_runner.dart';
 import 'common/repository_package.dart';
 
 /// Key for APK.
@@ -41,14 +38,17 @@ const String _flutterBuildTypeWindows = 'windows';
 
 const String _flutterBuildTypeAndroidAlias = 'android';
 
+/// Key for Swift Package Manager.
+const String _swiftPackageManagerFlag = 'swift-package-manager';
+
 /// A command to build the example applications for packages.
 class BuildExamplesCommand extends PackageLoopingCommand {
   /// Creates an instance of the build command.
   BuildExamplesCommand(
-    Directory packagesDir, {
-    ProcessRunner processRunner = const ProcessRunner(),
-    Platform platform = const LocalPlatform(),
-  }) : super(packagesDir, processRunner: processRunner, platform: platform) {
+    super.packagesDir, {
+    super.processRunner,
+    super.platform,
+  }) {
     argParser.addFlag(platformLinux);
     argParser.addFlag(platformMacOS);
     argParser.addFlag(platformWeb);
@@ -61,6 +61,7 @@ class BuildExamplesCommand extends PackageLoopingCommand {
       defaultsTo: '',
       help: 'Enables the given Dart SDK experiments.',
     );
+    argParser.addFlag(_swiftPackageManagerFlag);
   }
 
   // Maps the switch this command uses to identify a platform to information
@@ -114,6 +115,15 @@ class BuildExamplesCommand extends PackageLoopingCommand {
       'single key "$_pluginToolsConfigGlobalKey" containing a list of build '
       'arguments.';
 
+  /// Returns true if `--swift-package-manager` flag was passed along with
+  /// either `--ios` or `--macos`.
+  bool get usingSwiftPackageManager {
+    final List<String> platformFlags = _platforms.keys.toList();
+    return getBoolArg(_swiftPackageManagerFlag) &&
+        (platformFlags.contains(platformIOS) ||
+            platformFlags.contains(platformMacOS));
+  }
+
   @override
   Future<void> initializeRun() async {
     final List<String> platformFlags = _platforms.keys.toList();
@@ -123,6 +133,17 @@ class BuildExamplesCommand extends PackageLoopingCommand {
           'None of ${platformFlags.map((String platform) => '--$platform').join(', ')} '
           'were specified. At least one platform must be provided.');
       throw ToolExit(_exitNoPlatformFlags);
+    }
+
+    // TODO(vashworth): Enable on stable once Swift Package Manager feature is
+    // available on stable.
+    if (usingSwiftPackageManager &&
+        platform.environment['CHANNEL'] != 'stable') {
+      await processRunner.runAndStream(
+        flutterCommand,
+        <String>['config', '--enable-swift-package-manager'],
+        exitOnError: true,
+      );
     }
   }
 
@@ -179,9 +200,8 @@ class BuildExamplesCommand extends PackageLoopingCommand {
         // supported platforms. For packages, just log and skip any requested
         // platform that a package doesn't have set up.
         if (!isPlugin &&
-            !example.directory
-                .childDirectory(platform.flutterPlatformDirectory)
-                .existsSync()) {
+            !example.appSupportsPlatform(
+                getPlatformByName(platform.pluginPlatform))) {
           print('Skipping ${platform.label} for $packageName; not supported.');
           continue;
         }
@@ -306,11 +326,6 @@ class _PlatformDetails {
 
   /// The `flutter build` build type.
   final String flutterBuildType;
-
-  /// The Flutter platform directory name.
-  // In practice, this is the same as the plugin platform key for all platforms.
-  // If that changes, this can be adjusted.
-  String get flutterPlatformDirectory => pluginPlatform;
 
   /// Any extra flags to pass to `flutter build`.
   final List<String> extraBuildFlags;

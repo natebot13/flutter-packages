@@ -349,6 +349,33 @@ void main() {
         ),
       );
     });
+
+    test('skips publish with --tag-for-auto-publish', () async {
+      const String packageName = 'a_package';
+      createFakePackage(packageName, packagesDir);
+
+      final List<String> output =
+          await runCapturingPrint(commandRunner, <String>[
+        'publish',
+        '--packages=$packageName',
+        '--tag-for-auto-publish',
+      ]);
+
+      // There should be no variant of any command containing "publish".
+      expect(
+          processRunner.recordedCalls
+              .map((ProcessCall call) => call.toString()),
+          isNot(contains(contains('publish'))));
+      // The output should indicate that it was tagged, not published.
+      expect(
+        output,
+        containsAllInOrder(
+          <Matcher>[
+            contains('Tagged a_package successfully!'),
+          ],
+        ),
+      );
+    });
   });
 
   group('Tags release', () {
@@ -389,6 +416,18 @@ void main() {
           processRunner.recordedCalls,
           isNot(contains(
               const ProcessCall('git-tag', <String>['foo-v0.0.1'], null))));
+    });
+
+    test('when passed --tag-for-auto-publish', () async {
+      createFakePlugin('foo', packagesDir, examples: <String>[]);
+      await runCapturingPrint(commandRunner, <String>[
+        'publish',
+        '--packages=foo',
+        '--tag-for-auto-publish',
+      ]);
+
+      expect(processRunner.recordedCalls,
+          contains(const ProcessCall('git-tag', <String>['foo-v0.0.1'], null)));
     });
   });
 
@@ -437,6 +476,21 @@ void main() {
           containsAllInOrder(<Matcher>[
             contains('Published foo successfully!'),
           ]));
+    });
+
+    test('when passed --tag-for-auto-publish', () async {
+      createFakePlugin('foo', packagesDir, examples: <String>[]);
+      await runCapturingPrint(commandRunner, <String>[
+        'publish',
+        '--packages=foo',
+        '--skip-confirmation',
+        '--tag-for-auto-publish',
+      ]);
+
+      expect(
+          processRunner.recordedCalls,
+          contains(const ProcessCall(
+              'git-push', <String>['upstream', 'foo-v0.0.1'], null)));
     });
 
     test('to upstream by default, dry run', () async {
@@ -488,6 +542,62 @@ void main() {
     });
   });
 
+  group('--already-tagged', () {
+    test('passes when HEAD has the expected tag', () async {
+      createFakePlugin('foo', packagesDir, examples: <String>[]);
+
+      processRunner.mockProcessesForExecutable['git-tag'] = <FakeProcessInfo>[
+        FakeProcessInfo(MockProcess()), // Skip the initializeRun call.
+        FakeProcessInfo(MockProcess(stdout: 'foo-v0.0.1\n'),
+            <String>['--points-at', 'HEAD'])
+      ];
+
+      await runCapturingPrint(commandRunner,
+          <String>['publish', '--packages=foo', '--already-tagged']);
+    });
+
+    test('fails if HEAD does not have the expected tag', () async {
+      createFakePlugin('foo', packagesDir, examples: <String>[]);
+
+      Error? commandError;
+      final List<String> output = await runCapturingPrint(commandRunner,
+          <String>['publish', '--packages=foo', '--already-tagged'],
+          errorHandler: (Error e) {
+        commandError = e;
+      });
+
+      expect(commandError, isA<ToolExit>());
+      expect(
+          output,
+          containsAllInOrder(<Matcher>[
+            contains('The current checkout is not already tagged "foo-v0.0.1"'),
+            contains('missing tag'),
+          ]));
+    });
+
+    test('does not create or push tags', () async {
+      createFakePlugin('foo', packagesDir, examples: <String>[]);
+
+      processRunner.mockProcessesForExecutable['git-tag'] = <FakeProcessInfo>[
+        FakeProcessInfo(MockProcess()), // Skip the initializeRun call.
+        FakeProcessInfo(MockProcess(stdout: 'foo-v0.0.1\n'),
+            <String>['--points-at', 'HEAD'])
+      ];
+
+      await runCapturingPrint(commandRunner,
+          <String>['publish', '--packages=foo', '--already-tagged']);
+
+      expect(
+          processRunner.recordedCalls,
+          isNot(contains(
+              const ProcessCall('git-tag', <String>['foo-v0.0.1'], null))));
+      expect(
+          processRunner.recordedCalls
+              .map((ProcessCall call) => call.executable),
+          isNot(contains('git-push')));
+    });
+  });
+
   group('Auto release (all-changed flag)', () {
     test('can release newly created plugins', () async {
       mockHttpResponses['plugin1'] = <String, dynamic>{
@@ -525,8 +635,8 @@ void main() {
                 'Publishing all packages that have changed relative to "HEAD~"'),
             contains('Running `pub publish ` in ${plugin1.path}...'),
             contains('Running `pub publish ` in ${plugin2.path}...'),
-            contains('plugin1 - \x1B[32mpublished\x1B[0m'),
-            contains('plugin2/plugin2 - \x1B[32mpublished\x1B[0m'),
+            contains('plugin1 - published'),
+            contains('plugin2/plugin2 - published'),
           ]));
       expect(
           processRunner.recordedCalls,

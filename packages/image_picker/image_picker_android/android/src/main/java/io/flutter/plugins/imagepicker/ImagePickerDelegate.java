@@ -7,6 +7,7 @@ package io.flutter.plugins.imagepicker;
 import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
+import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -294,10 +295,12 @@ public class ImagePickerDelegate
 
   private void launchPickMediaFromGalleryIntent(Messages.GeneralOptions generalOptions) {
     Intent pickMediaIntent;
-    if (generalOptions.getUsePhotoPicker() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+    if (generalOptions.getUsePhotoPicker()) {
       if (generalOptions.getAllowMultiple()) {
+        int limit = ImagePickerUtils.getLimitFromOption(generalOptions);
+
         pickMediaIntent =
-            new ActivityResultContracts.PickMultipleVisualMedia()
+            new ActivityResultContracts.PickMultipleVisualMedia(limit)
                 .createIntent(
                     activity,
                     new PickVisualMediaRequest.Builder()
@@ -319,9 +322,7 @@ public class ImagePickerDelegate
       pickMediaIntent.setType("*/*");
       String[] mimeTypes = {"video/*", "image/*"};
       pickMediaIntent.putExtra("CONTENT_TYPE", mimeTypes);
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-        pickMediaIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, generalOptions.getAllowMultiple());
-      }
+      pickMediaIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, generalOptions.getAllowMultiple());
     }
     activity.startActivityForResult(pickMediaIntent, REQUEST_CODE_CHOOSE_MEDIA_FROM_GALLERY);
   }
@@ -340,7 +341,7 @@ public class ImagePickerDelegate
 
   private void launchPickVideoFromGalleryIntent(Boolean usePhotoPicker) {
     Intent pickVideoIntent;
-    if (usePhotoPicker && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+    if (usePhotoPicker) {
       pickVideoIntent =
           new ActivityResultContracts.PickVisualMedia()
               .createIntent(
@@ -427,18 +428,19 @@ public class ImagePickerDelegate
   public void chooseMultiImageFromGallery(
       @NonNull ImageSelectionOptions options,
       boolean usePhotoPicker,
+      int limit,
       @NonNull Messages.Result<List<String>> result) {
     if (!setPendingOptionsAndResult(options, null, result)) {
       finishWithAlreadyActiveError(result);
       return;
     }
 
-    launchMultiPickImageFromGalleryIntent(usePhotoPicker);
+    launchMultiPickImageFromGalleryIntent(usePhotoPicker, limit);
   }
 
   private void launchPickImageFromGalleryIntent(Boolean usePhotoPicker) {
     Intent pickImageIntent;
-    if (usePhotoPicker && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+    if (usePhotoPicker) {
       pickImageIntent =
           new ActivityResultContracts.PickVisualMedia()
               .createIntent(
@@ -453,11 +455,11 @@ public class ImagePickerDelegate
     activity.startActivityForResult(pickImageIntent, REQUEST_CODE_CHOOSE_IMAGE_FROM_GALLERY);
   }
 
-  private void launchMultiPickImageFromGalleryIntent(Boolean usePhotoPicker) {
+  private void launchMultiPickImageFromGalleryIntent(Boolean usePhotoPicker, int limit) {
     Intent pickMultiImageIntent;
-    if (usePhotoPicker && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+    if (usePhotoPicker) {
       pickMultiImageIntent =
-          new ActivityResultContracts.PickMultipleVisualMedia()
+          new ActivityResultContracts.PickMultipleVisualMedia(limit)
               .createIntent(
                   activity,
                   new PickVisualMediaRequest.Builder()
@@ -466,9 +468,7 @@ public class ImagePickerDelegate
     } else {
       pickMultiImageIntent = new Intent(Intent.ACTION_GET_CONTENT);
       pickMultiImageIntent.setType("image/*");
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-        pickMultiImageIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-      }
+      pickMultiImageIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
     }
     activity.startActivityForResult(
         pickMultiImageIntent, REQUEST_CODE_CHOOSE_MULTI_IMAGE_FROM_GALLERY);
@@ -549,10 +549,14 @@ public class ImagePickerDelegate
 
   private void grantUriPermissions(Intent intent, Uri imageUri) {
     PackageManager packageManager = activity.getPackageManager();
-    // TODO(stuartmorgan): Add new codepath: https://github.com/flutter/flutter/issues/121816
-    @SuppressWarnings("deprecation")
-    List<ResolveInfo> compatibleActivities =
-        packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+    List<ResolveInfo> compatibleActivities;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      compatibleActivities =
+          packageManager.queryIntentActivities(
+              intent, PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DEFAULT_ONLY));
+    } else {
+      compatibleActivities = queryIntentActivitiesPreApi33(packageManager, intent);
+    }
 
     for (ResolveInfo info : compatibleActivities) {
       activity.grantUriPermission(
@@ -560,6 +564,12 @@ public class ImagePickerDelegate
           imageUri,
           Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
     }
+  }
+
+  @SuppressWarnings("deprecation")
+  private static List<ResolveInfo> queryIntentActivitiesPreApi33(
+      PackageManager packageManager, Intent intent) {
+    return packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
   }
 
   @Override
@@ -630,7 +640,21 @@ public class ImagePickerDelegate
 
   private void handleChooseImageResult(int resultCode, Intent data) {
     if (resultCode == Activity.RESULT_OK && data != null) {
-      String path = fileUtils.getPathFromUri(activity, data.getData());
+      Uri uri = data.getData();
+      // On several pre-Android 13 devices using Android Photo Picker, the Uri from getData() could be null.
+      if (uri == null) {
+        ClipData clipData = data.getClipData();
+        if (clipData != null && clipData.getItemCount() == 1) {
+          uri = clipData.getItemAt(0).getUri();
+        }
+      }
+      // If there's no valid Uri, return an error
+      if (uri == null) {
+        finishWithError("no_valid_image_uri", "Cannot find the selected image.");
+        return;
+      }
+
+      String path = fileUtils.getPathFromUri(activity, uri);
       handleImageResult(path, false);
       return;
     }
@@ -701,7 +725,21 @@ public class ImagePickerDelegate
 
   private void handleChooseVideoResult(int resultCode, Intent data) {
     if (resultCode == Activity.RESULT_OK && data != null) {
-      String path = fileUtils.getPathFromUri(activity, data.getData());
+      Uri uri = data.getData();
+      // On several pre-Android 13 devices using Android Photo Picker, the Uri from getData() could be null.
+      if (uri == null) {
+        ClipData clipData = data.getClipData();
+        if (clipData != null && clipData.getItemCount() == 1) {
+          uri = clipData.getItemAt(0).getUri();
+        }
+      }
+      // If there's no valid Uri, return an error
+      if (uri == null) {
+        finishWithError("no_valid_video_uri", "Cannot find the selected video.");
+        return;
+      }
+
+      String path = fileUtils.getPathFromUri(activity, uri);
       handleVideoResult(path);
       return;
     }

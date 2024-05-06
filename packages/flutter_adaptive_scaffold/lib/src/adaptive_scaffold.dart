@@ -95,13 +95,18 @@ class AdaptiveScaffold extends StatefulWidget {
     this.largeBreakpoint = Breakpoints.large,
     this.drawerBreakpoint = Breakpoints.smallDesktop,
     this.internalAnimations = true,
+    this.transitionDuration = const Duration(seconds: 1),
     this.bodyOrientation = Axis.horizontal,
     this.onSelectedIndexChange,
     this.useDrawer = true,
     this.appBar,
     this.navigationRailWidth = 72,
     this.extendedNavigationRailWidth = 192,
-  });
+    this.appBarBreakpoint,
+  }) : assert(
+          destinations.length >= 2,
+          'At least two destinations are required',
+        );
 
   /// The destinations to be used in navigation items. These are converted to
   /// [NavigationRailDestination]s and [BottomNavigationBarItem]s and inserted
@@ -197,6 +202,11 @@ class AdaptiveScaffold extends StatefulWidget {
   /// Defaults to true.
   final bool internalAnimations;
 
+  /// Defines the duration of transition between layouts.
+  ///
+  /// Defaults to [Duration(seconds: 1)].
+  final Duration transitionDuration;
+
   /// The orientation of the body and secondaryBody. Either horizontal (side by
   /// side) or vertical (top to bottom).
   ///
@@ -215,12 +225,19 @@ class AdaptiveScaffold extends StatefulWidget {
   /// Defaults to [Breakpoints.smallDesktop].
   final Breakpoint drawerBreakpoint;
 
+  /// An optional [Breakpoint] which overrides the [appBar] breakpoint to display
+  /// an [AppBar] without depending on the drawer visibility.
+  ///
+  /// By default, an [AppBar] will show on [Breakpoints.smallDesktop] if [useDrawer] is set
+  /// to true.
+  final Breakpoint? appBarBreakpoint;
+
   /// Option to override the default [AppBar] when using drawer in desktop
   /// small.
   final PreferredSizeWidget? appBar;
 
   /// Callback function for when the index of a [NavigationRail] changes.
-  final Function(int)? onSelectedIndexChange;
+  final void Function(int)? onSelectedIndexChange;
 
   /// The width used for the internal [NavigationRail] at the medium [Breakpoint].
   final double navigationRailWidth;
@@ -259,7 +276,7 @@ class AdaptiveScaffold extends StatefulWidget {
     EdgeInsetsGeometry padding = const EdgeInsets.all(8.0),
     Widget? leading,
     Widget? trailing,
-    Function(int)? onDestinationSelected,
+    void Function(int)? onDestinationSelected,
     double? groupAlignment,
     IconThemeData? selectedIconTheme,
     IconThemeData? unselectedIconTheme,
@@ -320,20 +337,25 @@ class AdaptiveScaffold extends StatefulWidget {
         final NavigationBarThemeData currentNavBarTheme =
             NavigationBarTheme.of(context);
         return NavigationBarTheme(
-            data: currentNavBarTheme.copyWith(
-              iconTheme: MaterialStateProperty.resolveWith(
-                  (Set<MaterialState> states) {
+          data: currentNavBarTheme.copyWith(
+            iconTheme: MaterialStateProperty.resolveWith(
+              (Set<MaterialState> states) {
                 return currentNavBarTheme.iconTheme
                         ?.resolve(states)
                         ?.copyWith(size: iconSize) ??
                     IconTheme.of(context).copyWith(size: iconSize);
-              }),
+              },
             ),
+          ),
+          child: MediaQuery(
+            data: MediaQuery.of(context).removePadding(removeTop: true),
             child: NavigationBar(
               selectedIndex: currentIndex ?? 0,
               destinations: destinations,
               onDestinationSelected: onDestinationSelected,
-            ));
+            ),
+          ),
+        );
       },
     );
   }
@@ -483,13 +505,18 @@ class AdaptiveScaffold extends StatefulWidget {
 }
 
 class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
+  // Global scaffold key that will help to manage drawer state.
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   @override
   Widget build(BuildContext context) {
     final NavigationRailThemeData navRailTheme =
         Theme.of(context).navigationRailTheme;
 
     return Scaffold(
-      appBar: widget.drawerBreakpoint.isActive(context) && widget.useDrawer
+      key: _scaffoldKey,
+      appBar: widget.drawerBreakpoint.isActive(context) && widget.useDrawer ||
+              (widget.appBarBreakpoint?.isActive(context) ?? false)
           ? widget.appBar ?? AppBar()
           : null,
       drawer: widget.drawerBreakpoint.isActive(context) && widget.useDrawer
@@ -500,13 +527,15 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                 trailing: widget.trailingNavRail,
                 selectedIndex: widget.selectedIndex,
                 destinations: widget.destinations
-                    .map((_) => AdaptiveScaffold.toRailDestination(_))
+                    .map((NavigationDestination destination) =>
+                        AdaptiveScaffold.toRailDestination(destination))
                     .toList(),
-                onDestinationSelected: widget.onSelectedIndexChange,
+                onDestinationSelected: _onDrawerDestinationSelected,
               ),
             )
           : null,
       body: AdaptiveLayout(
+        transitionDuration: widget.transitionDuration,
         bodyOrientation: widget.bodyOrientation,
         bodyRatio: widget.bodyRatio,
         internalAnimations: widget.internalAnimations,
@@ -520,7 +549,8 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                 trailing: widget.trailingNavRail,
                 selectedIndex: widget.selectedIndex,
                 destinations: widget.destinations
-                    .map((_) => AdaptiveScaffold.toRailDestination(_))
+                    .map((NavigationDestination destination) =>
+                        AdaptiveScaffold.toRailDestination(destination))
                     .toList(),
                 onDestinationSelected: widget.onSelectedIndexChange,
                 backgroundColor: navRailTheme.backgroundColor,
@@ -539,7 +569,8 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                 trailing: widget.trailingNavRail,
                 selectedIndex: widget.selectedIndex,
                 destinations: widget.destinations
-                    .map((_) => AdaptiveScaffold.toRailDestination(_))
+                    .map((NavigationDestination destination) =>
+                        AdaptiveScaffold.toRailDestination(destination))
                     .toList(),
                 onDestinationSelected: widget.onSelectedIndexChange,
                 backgroundColor: navRailTheme.backgroundColor,
@@ -645,6 +676,20 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
         ),
       ),
     );
+  }
+
+  void _onDrawerDestinationSelected(int index) {
+    if (widget.useDrawer) {
+      // If [useDrawer] is true, then retrieve the current state.
+      final ScaffoldState? scaffoldCurrentContext = _scaffoldKey.currentState;
+      if (scaffoldCurrentContext != null) {
+        if (scaffoldCurrentContext.isDrawerOpen) {
+          // If drawer is open, call [closeDrawer] to dismiss drawer as per material guidelines.
+          scaffoldCurrentContext.closeDrawer();
+        }
+      }
+    }
+    widget.onSelectedIndexChange?.call(index);
   }
 }
 

@@ -18,6 +18,7 @@ import 'zoom_state.dart';
 /// Android Activity to which this plugin is attached.
 ///
 /// See https://developer.android.com/reference/androidx/lifecycle/LiveData.
+@immutable
 class LiveData<T extends Object> extends JavaObject {
   /// Constructs a [LiveData] that is not automatically attached to a native object.
   LiveData.detached({this.binaryMessenger, this.instanceManager})
@@ -103,14 +104,12 @@ class _LiveDataHostApiImpl extends LiveDataHostApi {
       LiveData<T> instance) async {
     LiveDataSupportedTypeData? typeData;
     switch (T) {
-      case CameraState:
+      case const (CameraState):
         typeData =
             LiveDataSupportedTypeData(value: LiveDataSupportedType.cameraState);
-        break;
-      case ZoomState:
+      case const (ZoomState):
         typeData =
             LiveDataSupportedTypeData(value: LiveDataSupportedType.zoomState);
-        break;
       default:
         throw ArgumentError(LiveData.unsupportedLiveDataTypeErrorMessage);
     }

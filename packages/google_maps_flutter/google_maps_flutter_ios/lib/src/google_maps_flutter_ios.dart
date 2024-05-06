@@ -172,24 +172,20 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
     switch (call.method) {
       case 'camera#onMoveStarted':
         _mapEventStreamController.add(CameraMoveStartedEvent(mapId));
-        break;
       case 'camera#onMove':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(CameraMoveEvent(
           mapId,
           CameraPosition.fromMap(arguments['position'])!,
         ));
-        break;
       case 'camera#onIdle':
         _mapEventStreamController.add(CameraIdleEvent(mapId));
-        break;
       case 'marker#onTap':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MarkerTapEvent(
           mapId,
           MarkerId(arguments['markerId']! as String),
         ));
-        break;
       case 'marker#onDragStart':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MarkerDragStartEvent(
@@ -197,7 +193,6 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
           LatLng.fromJson(arguments['position'])!,
           MarkerId(arguments['markerId']! as String),
         ));
-        break;
       case 'marker#onDrag':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MarkerDragEvent(
@@ -205,7 +200,6 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
           LatLng.fromJson(arguments['position'])!,
           MarkerId(arguments['markerId']! as String),
         ));
-        break;
       case 'marker#onDragEnd':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MarkerDragEndEvent(
@@ -213,42 +207,36 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
           LatLng.fromJson(arguments['position'])!,
           MarkerId(arguments['markerId']! as String),
         ));
-        break;
       case 'infoWindow#onTap':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(InfoWindowTapEvent(
           mapId,
           MarkerId(arguments['markerId']! as String),
         ));
-        break;
       case 'polyline#onTap':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(PolylineTapEvent(
           mapId,
           PolylineId(arguments['polylineId']! as String),
         ));
-        break;
       case 'polygon#onTap':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(PolygonTapEvent(
           mapId,
           PolygonId(arguments['polygonId']! as String),
         ));
-        break;
       case 'circle#onTap':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(CircleTapEvent(
           mapId,
           CircleId(arguments['circleId']! as String),
         ));
-        break;
       case 'map#onTap':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MapTapEvent(
           mapId,
           LatLng.fromJson(arguments['position'])!,
         ));
-        break;
       case 'map#onLongPress':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MapLongPressEvent(
@@ -495,6 +483,12 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
     return _channel(mapId).invokeMethod<Uint8List>('map#takeSnapshot');
   }
 
+  @override
+  Future<String?> getStyleError({required int mapId}) {
+    final MethodChannel channel = ensureChannelInitialized(mapId);
+    return channel.invokeMethod<String>('map#getStyleError');
+  }
+
   Widget _buildView(
     int creationId,
     PlatformViewCreatedCallback onPlatformViewCreated, {
@@ -646,6 +640,8 @@ Map<String, Object> _jsonForMapConfiguration(MapConfiguration config) {
     if (config.trafficEnabled != null) 'trafficEnabled': config.trafficEnabled!,
     if (config.buildingsEnabled != null)
       'buildingsEnabled': config.buildingsEnabled!,
+    if (config.cloudMapId != null) 'cloudMapId': config.cloudMapId!,
+    if (config.style != null) 'style': config.style!,
   };
 }
 

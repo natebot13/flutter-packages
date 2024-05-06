@@ -1,3 +1,93 @@
+## 0.3.5
+
+* Replaces `getCountryCode` with `countryCode`.
+
+## 0.3.4+1
+
+* Adds documentation for UserChoice and Alternative Billing.
+
+## 0.3.4
+
+* Adds `countryCode` API.
+
+## 0.3.3+1
+
+* Moves alternative billing listener creation to BillingClientFactoryImpl.
+
+## 0.3.3
+
+* Converts data objects in internal platform communication to Pigeon.
+* Deprecates JSON serialization and deserialization for Billing Client wrapper
+  objects.
+
+## 0.3.2+1
+
+* Converts internal platform communication to Pigeon.
+
+## 0.3.2
+
+* Adds UserChoiceBilling APIs to platform addition.
+* Updates minimum supported SDK version to Flutter 3.13/Dart 3.1.
+
+## 0.3.1
+
+* Adds alternative-billing-only APIs to InAppPurchaseAndroidPlatformAddition.
+
+## 0.3.0+18
+
+* Adds new getCountryCode() method to InAppPurchaseAndroidPlatformAddition to get a customer's country code.
+* Updates compileSdk version to 34.
+
+## 0.3.0+17
+
+* Bumps androidx.annotation:annotation from 1.7.0 to 1.7.1.
+
+## 0.3.0+16
+
+* Updates minimum supported SDK version to Flutter 3.10/Dart 3.0.
+* Fixes new lint warnings.
+
+## 0.3.0+15
+
+* Adds missing network error response code to BillingResponse enum.
+
+## 0.3.0+14
+
+* Updates annotations lib to 1.7.0.
+
+## 0.3.0+13
+
+* Updates example code for current versions of Flutter.
+
+## 0.3.0+12
+
+* Adds pub topics to package metadata.
+* Updates minimum supported SDK version to Flutter 3.7/Dart 2.19.
+
+## 0.3.0+11
+
+* Migrates `styleFrom` usage in examples off of deprecated `primary` and `onPrimary` parameters.
+
+## 0.3.0+10
+
+* Bumps com.android.billingclient:billing from 6.0.0 to 6.0.1.
+
+## 0.3.0+9
+
+* Bumps com.android.billingclient:billing from 5.2.0 to 6.0.0.
+
+## 0.3.0+8
+
+* Adds a [guide for migrating](migration_guide.md) to [0.3.0](#0.3.0).
+
+## 0.3.0+7
+
+* Bumps org.mockito:mockito-core from 4.7.0 to 5.3.1.
+
+## 0.3.0+6
+
+* Bumps org.jetbrains.kotlin:kotlin-bom from 1.8.21 to 1.8.22.
+
 ## 0.3.0+5
 
 * Bumps org.jetbrains.kotlin:kotlin-bom from 1.8.0 to 1.8.21.

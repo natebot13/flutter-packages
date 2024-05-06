@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/services.dart';
+import 'package:meta/meta.dart' show immutable;
 
 import 'android_camera_camerax_flutter_api_impls.dart';
 import 'camerax_library.g.dart';
@@ -14,8 +15,10 @@ import 'use_case.dart';
 /// Dart wrapping of CameraX VideoCapture class.
 ///
 /// See https://developer.android.com/reference/androidx/camera/video/VideoCapture.
+@immutable
 class VideoCapture extends UseCase {
-  /// Creates a VideoCapture that is not automatically attached to a native object.
+  /// Creates a [VideoCapture] that is not automatically attached to a native
+  /// object.
   VideoCapture.detached(
       {BinaryMessenger? binaryMessenger, InstanceManager? instanceManager})
       : super.detached(
@@ -25,6 +28,8 @@ class VideoCapture extends UseCase {
         binaryMessenger: binaryMessenger, instanceManager: instanceManager);
     AndroidCameraXCameraFlutterApis.instance.ensureSetUp();
   }
+
+  late final VideoCaptureHostApiImpl _api;
 
   /// Creates a [VideoCapture] associated with the given [Recorder].
   static Future<VideoCapture> withOutput(Recorder recorder,
@@ -36,12 +41,18 @@ class VideoCapture extends UseCase {
     return api.withOutputFromInstance(recorder);
   }
 
+  /// Dynamically sets the target rotation of this instance.
+  ///
+  /// [rotation] should be specified in terms of one of the [Surface]
+  /// rotation constants that represents the counter-clockwise degrees of
+  /// rotation relative to [DeviceOrientation.portraitUp].
+  Future<void> setTargetRotation(int rotation) =>
+      _api.setTargetRotationFromInstances(this, rotation);
+
   /// Gets the [Recorder] associated with this VideoCapture.
   Future<Recorder> getOutput() {
     return _api.getOutputFromInstance(this);
   }
-
-  late final VideoCaptureHostApiImpl _api;
 }
 
 /// Host API implementation of [VideoCapture].
@@ -72,6 +83,13 @@ class VideoCaptureHostApiImpl extends VideoCaptureHostApi {
     final int videoCaptureId = await withOutput(identifier);
     return instanceManager
         .getInstanceWithWeakReference<VideoCapture>(videoCaptureId)!;
+  }
+
+  /// Dynamically sets the target rotation of [instance] to [rotation].
+  Future<void> setTargetRotationFromInstances(
+      VideoCapture instance, int rotation) {
+    return setTargetRotation(
+        instanceManager.getIdentifier(instance)!, rotation);
   }
 
   /// Gets the [Recorder] associated with the provided [VideoCapture] instance.

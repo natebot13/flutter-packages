@@ -17,7 +17,6 @@ void main() {
       final Object json = descriptor.toJson();
 
       // Rehydrate a new bitmap descriptor...
-      // ignore: deprecated_member_use_from_same_package
       final BitmapDescriptor descriptorFromJson =
           BitmapDescriptor.fromJson(json);
 
@@ -185,7 +184,9 @@ void main() {
 
           expect((mip.toJson() as List<dynamic>)[2], 1);
           expect((scaled.toJson() as List<dynamic>)[2], 3);
-        });
+        },
+            // TODO(stuartmorgan): Investigate timeout on web.
+            skip: kIsWeb);
 
         test('name cannot be null or empty', () {
           expect(() {

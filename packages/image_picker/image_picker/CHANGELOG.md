@@ -1,6 +1,66 @@
+## 1.1.1
+
+* Updates documentation to note that Android Photo Picker use is not optional on Android 13+.
+
+## 1.1.0
+
+* Adds limit parameter to `MediaOptions` and `MultiImagePickerOptions` which limits
+  the number of media that can be selected. 
+    * Currently supported only on iOS and Android.
+* Updates minimum supported SDK version to Flutter 3.19/Dart 3.3.
+
+## 1.0.8
+
+* Updates minimum supported SDK version to Flutter 3.13/Dart 3.1.
+* Updates support matrix in README to indicate that iOS 11 is no longer supported.
+* Clients on versions of Flutter that still support iOS 11 can continue to use this
+  package with iOS 11, but will not receive any further updates to the iOS implementation.
+* Updates minimum iOS implementation version to include a privacy manifest.
+
+## 1.0.7
+
+* Updates minimum required plugin_platform_interface version to 2.1.7.
+
+## 1.0.6
+
+* Fixes new lint warnings.
+
+## 1.0.5
+
+* Updates example app to use non-deprecated video_player method.
+* Updates minimum supported SDK version to Flutter 3.10/Dart 3.0.
+
+## 1.0.4
+
+* Updates README to fix broken link.
+
+## 1.0.3
+
+* Adds pub topics to package metadata.
+* Updates minimum supported SDK version to Flutter 3.7/Dart 2.19.
+
+## 1.0.2
+
+* Adds compatibility with `image_picker_for_web` 3.0.
+
+## 1.0.1
+
+* Rolls platform implementations to ensure that `pickMedia` and
+  `pickMultipleMedia` have platform implementations.
+
+## 1.0.0
+
+* **BREAKING CHANGE**: Removes the deprecated `get*` methods. Clients who have
+  not already done so will need to migrate to the `pick*` versions that use
+  `XFile` rather than `PickedFile` for return values.
+    * As this is the only change, we encourage authors of published packages
+      that depend on `image_picker` to consider using a constraint of
+      `'>=0.8.9 <2.0.0'` rather than `^1.0.0` when updating dependencies, to
+      avoid conflicts with packages that have not yet updated.
+
 ## 0.8.9
 
-* Adds `getMedia` and `getMultipleMedia` methods.
+* Adds `pickMedia` and `pickMultipleMedia` methods.
 
 ## 0.8.8
 

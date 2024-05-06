@@ -4,8 +4,7 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/src/configuration.dart';
-import 'package:go_router/src/misc/errors.dart';
+import 'package:go_router/go_router.dart';
 
 import 'test_helpers.dart';
 
@@ -21,7 +20,7 @@ void main() {
 
       expect(
         () {
-          RouteConfiguration(
+          createRouteConfiguration(
             navigatorKey: root,
             routes: <RouteBase>[
               GoRoute(
@@ -68,7 +67,7 @@ void main() {
       final List<RouteBase> shellRouteChildren = <RouteBase>[];
       expect(
         () {
-          RouteConfiguration(
+          createRouteConfiguration(
             navigatorKey: root,
             routes: <RouteBase>[
               ShellRoute(routes: shellRouteChildren),
@@ -95,7 +94,7 @@ void main() {
 
       expect(
         () {
-          RouteConfiguration(
+          createRouteConfiguration(
             navigatorKey: root,
             routes: <RouteBase>[
               StatefulShellRoute.indexedStack(branches: <StatefulShellBranch>[
@@ -121,7 +120,7 @@ void main() {
             },
           );
         },
-        throwsA(isA<GoError>()),
+        throwsA(isA<AssertionError>()),
       );
     });
 
@@ -133,7 +132,7 @@ void main() {
       final GlobalKey<NavigatorState> keyA =
           GlobalKey<NavigatorState>(debugLabel: 'A');
 
-      RouteConfiguration(
+      createRouteConfiguration(
         navigatorKey: root,
         routes: <RouteBase>[
           StatefulShellRoute.indexedStack(branches: <StatefulShellBranch>[
@@ -169,7 +168,7 @@ void main() {
           GlobalKey<NavigatorState>();
       expect(
         () {
-          RouteConfiguration(
+          createRouteConfiguration(
             navigatorKey: root,
             routes: <RouteBase>[
               StatefulShellRoute.indexedStack(branches: <StatefulShellBranch>[
@@ -219,7 +218,7 @@ void main() {
       ];
       expect(
         () {
-          RouteConfiguration(
+          createRouteConfiguration(
             navigatorKey: root,
             routes: <RouteBase>[
               StatefulShellRoute.indexedStack(branches: <StatefulShellBranch>[
@@ -255,7 +254,7 @@ void main() {
           parentNavigatorKey: sectionANavigatorKey);
       expect(
         () {
-          RouteConfiguration(
+          createRouteConfiguration(
             navigatorKey: root,
             routes: <RouteBase>[
               StatefulShellRoute.indexedStack(branches: <StatefulShellBranch>[
@@ -288,7 +287,7 @@ void main() {
           GlobalKey<NavigatorState>();
       expect(
         () {
-          RouteConfiguration(
+          createRouteConfiguration(
             navigatorKey: root,
             routes: <RouteBase>[
               StatefulShellRoute.indexedStack(branches: <StatefulShellBranch>[
@@ -319,7 +318,7 @@ void main() {
             },
           );
         },
-        throwsA(isA<GoError>()),
+        throwsA(isA<AssertionError>()),
       );
     });
 
@@ -334,7 +333,7 @@ void main() {
           GlobalKey<NavigatorState>();
       expect(
         () {
-          RouteConfiguration(
+          createRouteConfiguration(
             navigatorKey: root,
             routes: <RouteBase>[
               StatefulShellRoute.indexedStack(branches: <StatefulShellBranch>[
@@ -374,7 +373,7 @@ void main() {
             },
           );
         },
-        throwsA(isA<GoError>()),
+        throwsA(isA<AssertionError>()),
       );
     });
 
@@ -384,7 +383,7 @@ void main() {
       final GlobalKey<NavigatorState> root =
           GlobalKey<NavigatorState>(debugLabel: 'root');
 
-      RouteConfiguration(
+      createRouteConfiguration(
         navigatorKey: root,
         routes: <RouteBase>[
           StatefulShellRoute.indexedStack(branches: <StatefulShellBranch>[
@@ -481,7 +480,7 @@ void main() {
         final StatefulShellBranch branchY;
         final StatefulShellBranch branchB;
 
-        final RouteConfiguration config = RouteConfiguration(
+        final RouteConfiguration config = createRouteConfiguration(
           navigatorKey: GlobalKey<NavigatorState>(debugLabel: 'root'),
           routes: <RouteBase>[
             StatefulShellRoute.indexedStack(
@@ -569,7 +568,7 @@ void main() {
           GlobalKey<NavigatorState>(debugLabel: 'shell');
       expect(
         () {
-          RouteConfiguration(
+          createRouteConfiguration(
             navigatorKey: root,
             routes: <RouteBase>[
               ShellRoute(
@@ -609,7 +608,7 @@ void main() {
             GlobalKey<NavigatorState>(debugLabel: 'shell');
         final GlobalKey<NavigatorState> shell2 =
             GlobalKey<NavigatorState>(debugLabel: 'shell2');
-        RouteConfiguration(
+        createRouteConfiguration(
           navigatorKey: root,
           routes: <RouteBase>[
             ShellRoute(
@@ -662,7 +661,7 @@ void main() {
             GlobalKey<NavigatorState>(debugLabel: 'root');
         final GlobalKey<NavigatorState> shell =
             GlobalKey<NavigatorState>(debugLabel: 'shell');
-        RouteConfiguration(
+        createRouteConfiguration(
           navigatorKey: root,
           routes: <RouteBase>[
             ShellRoute(
@@ -712,7 +711,7 @@ void main() {
         final GlobalKey<NavigatorState> shell =
             GlobalKey<NavigatorState>(debugLabel: 'shell');
         expect(
-          () => RouteConfiguration(
+          () => createRouteConfiguration(
             navigatorKey: root,
             routes: <RouteBase>[
               ShellRoute(
@@ -750,7 +749,7 @@ void main() {
               return null;
             },
           ),
-          throwsA(isA<GoError>()),
+          throwsA(isA<AssertionError>()),
         );
       },
     );
@@ -762,7 +761,7 @@ void main() {
             GlobalKey<NavigatorState>(debugLabel: 'root');
         final GlobalKey<NavigatorState> shell =
             GlobalKey<NavigatorState>(debugLabel: 'shell');
-        RouteConfiguration(
+        createRouteConfiguration(
           navigatorKey: root,
           routes: <RouteBase>[
             ShellRoute(
@@ -815,7 +814,7 @@ void main() {
         final GlobalKey<NavigatorState> shell2 =
             GlobalKey<NavigatorState>(debugLabel: 'shell2');
         expect(
-          () => RouteConfiguration(
+          () => createRouteConfiguration(
             navigatorKey: root,
             routes: <RouteBase>[
               ShellRoute(
@@ -858,7 +857,7 @@ void main() {
               return null;
             },
           ),
-          throwsA(isA<GoError>()),
+          throwsA(isA<AssertionError>()),
         );
       },
     );
@@ -866,7 +865,7 @@ void main() {
         () {
       final GlobalKey<NavigatorState> root =
           GlobalKey<NavigatorState>(debugLabel: 'root');
-      RouteConfiguration(
+      createRouteConfiguration(
         routes: <RouteBase>[
           ShellRoute(
             builder: _mockShellBuilder,
@@ -908,7 +907,7 @@ void main() {
             GlobalKey<NavigatorState>(debugLabel: 'shell');
         final GlobalKey<NavigatorState> shell2 =
             GlobalKey<NavigatorState>(debugLabel: 'shell2');
-        RouteConfiguration(
+        createRouteConfiguration(
           navigatorKey: root,
           routes: <RouteBase>[
             ShellRoute(
@@ -960,7 +959,7 @@ void main() {
           GlobalKey<NavigatorState>(debugLabel: 'root');
       expect(
         () {
-          RouteConfiguration(
+          createRouteConfiguration(
             navigatorKey: root,
             routes: <RouteBase>[
               ShellRoute(
@@ -992,7 +991,7 @@ void main() {
             GlobalKey<NavigatorState>(debugLabel: 'shell');
 
         expect(
-          RouteConfiguration(
+          createRouteConfiguration(
             navigatorKey: root,
             routes: <RouteBase>[
               GoRoute(

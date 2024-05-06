@@ -17,6 +17,7 @@ const LatLng _kInitialMapCenter = LatLng(0, 0);
 const double _kInitialZoomLevel = 5;
 const CameraPosition _kInitialCameraPosition =
     CameraPosition(target: _kInitialMapCenter, zoom: _kInitialZoomLevel);
+const String _kCloudMapId = '000000000000000'; // Dummy map ID.
 
 void googleMapsTests() {
   GoogleMapsFlutterPlatform.instance.enableDebugInspection();
@@ -470,17 +471,11 @@ void googleMapsTests() {
     final Rect rect = tester.getRect(find.byKey(key));
     expect(
         coordinate.x,
-        ((rect.center.dx - rect.topLeft.dx) *
-                // TODO(pdblasi-google): Update `window` usages to new API after 3.9.0 is in stable. https://github.com/flutter/flutter/issues/122912
-                // ignore: deprecated_member_use
-                tester.binding.window.devicePixelRatio)
+        ((rect.center.dx - rect.topLeft.dx) * tester.view.devicePixelRatio)
             .round());
     expect(
         coordinate.y,
-        ((rect.center.dy - rect.topLeft.dy) *
-                // TODO(pdblasi-google): Update `window` usages to new API after 3.9.0 is in stable. https://github.com/flutter/flutter/issues/122912
-                // ignore: deprecated_member_use
-                tester.binding.window.devicePixelRatio)
+        ((rect.center.dy - rect.topLeft.dy) * tester.view.devicePixelRatio)
             .round());
     await tester.binding.setSurfaceSize(null);
   });
@@ -727,7 +722,8 @@ void googleMapsTests() {
         await controllerCompleter.future;
     const String mapStyle =
         '[{"elementType":"geometry","stylers":[{"color":"#242f3e"}]}]';
-    await controller.setMapStyle(mapStyle);
+    await GoogleMapsFlutterPlatform.instance
+        .setMapStyle(mapStyle, mapId: controller.mapId);
   });
 
   testWidgets('testSetMapStyle invalid Json String',
@@ -751,10 +747,12 @@ void googleMapsTests() {
         await controllerCompleter.future;
 
     try {
-      await controller.setMapStyle('invalid_value');
+      await GoogleMapsFlutterPlatform.instance
+          .setMapStyle('invalid_value', mapId: controller.mapId);
       fail('expected MapStyleException');
     } on MapStyleException catch (e) {
       expect(e.cause, isNotNull);
+      expect(await controller.getStyleError(), isNotNull);
     }
   });
 
@@ -776,7 +774,8 @@ void googleMapsTests() {
 
     final ExampleGoogleMapController controller =
         await controllerCompleter.future;
-    await controller.setMapStyle(null);
+    await GoogleMapsFlutterPlatform.instance
+        .setMapStyle(null, mapId: controller.mapId);
   });
 
   testWidgets('testGetLatLng', (WidgetTester tester) async {
@@ -940,6 +939,14 @@ void googleMapsTests() {
 
     final ExampleGoogleMapController controller =
         await controllerCompleter.future;
+
+    await tester.pumpAndSettle();
+
+    // TODO(mossmana): Adding this delay addresses
+    // https://github.com/flutter/flutter/issues/131783. It may be related
+    // to https://github.com/flutter/flutter/issues/54758 and should be
+    // re-evaluated when that issue is fixed.
+    await Future<void>.delayed(const Duration(seconds: 1));
 
     bool iwVisibleStatus =
         await controller.isMarkerInfoWindowShown(marker.markerId);
@@ -1182,6 +1189,163 @@ void googleMapsTests() {
       expect(tileOverlayInfo1, isNull);
     },
   );
+
+  testWidgets('marker clustering', (WidgetTester tester) async {
+    final Key key = GlobalKey();
+    const int clusterManagersAmount = 2;
+    const int markersPerClusterManager = 5;
+    final Map<MarkerId, Marker> markers = <MarkerId, Marker>{};
+    final Set<ClusterManager> clusterManagers = <ClusterManager>{};
+
+    for (int i = 0; i < clusterManagersAmount; i++) {
+      final ClusterManagerId clusterManagerId =
+          ClusterManagerId('cluster_manager_$i');
+      final ClusterManager clusterManager =
+          ClusterManager(clusterManagerId: clusterManagerId);
+      clusterManagers.add(clusterManager);
+    }
+
+    for (final ClusterManager cm in clusterManagers) {
+      for (int i = 0; i < markersPerClusterManager; i++) {
+        final MarkerId markerId =
+            MarkerId('${cm.clusterManagerId.value}_marker_$i');
+        final Marker marker = Marker(
+            markerId: markerId,
+            clusterManagerId: cm.clusterManagerId,
+            position: LatLng(
+                _kInitialMapCenter.latitude + i, _kInitialMapCenter.longitude));
+        markers[markerId] = marker;
+      }
+    }
+
+    final Completer<ExampleGoogleMapController> controllerCompleter =
+        Completer<ExampleGoogleMapController>();
+
+    await tester.pumpWidget(Directionality(
+      textDirection: TextDirection.ltr,
+      child: ExampleGoogleMap(
+        key: key,
+        initialCameraPosition: _kInitialCameraPosition,
+        clusterManagers: clusterManagers,
+        markers: Set<Marker>.of(markers.values),
+        onMapCreated: (ExampleGoogleMapController googleMapController) {
+          controllerCompleter.complete(googleMapController);
+        },
+      ),
+    ));
+
+    final ExampleGoogleMapController controller =
+        await controllerCompleter.future;
+
+    final GoogleMapsInspectorPlatform inspector =
+        GoogleMapsInspectorPlatform.instance!;
+
+    for (final ClusterManager cm in clusterManagers) {
+      final List<Cluster> clusters = await inspector.getClusters(
+          mapId: controller.mapId, clusterManagerId: cm.clusterManagerId);
+      final int markersAmountForClusterManager = clusters
+          .map<int>((Cluster cluster) => cluster.count)
+          .reduce((int value, int element) => value + element);
+      expect(markersAmountForClusterManager, markersPerClusterManager);
+    }
+
+    // Remove markers from clusterManagers and test that clusterManagers are empty.
+    for (final MapEntry<MarkerId, Marker> entry in markers.entries) {
+      markers[entry.key] = _copyMarkerWithClusterManagerId(entry.value, null);
+    }
+    await tester.pumpWidget(Directionality(
+      textDirection: TextDirection.ltr,
+      child: ExampleGoogleMap(
+          key: key,
+          initialCameraPosition: _kInitialCameraPosition,
+          clusterManagers: clusterManagers,
+          markers: Set<Marker>.of(markers.values)),
+    ));
+
+    for (final ClusterManager cm in clusterManagers) {
+      final List<Cluster> clusters = await inspector.getClusters(
+          mapId: controller.mapId, clusterManagerId: cm.clusterManagerId);
+      expect(clusters.length, 0);
+    }
+  });
+
+  testWidgets(
+    'testCloudMapId',
+    (WidgetTester tester) async {
+      final Completer<int> mapIdCompleter = Completer<int>();
+      final Key key = GlobalKey();
+
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: ExampleGoogleMap(
+            key: key,
+            initialCameraPosition: _kInitialCameraPosition,
+            onMapCreated: (ExampleGoogleMapController controller) {
+              mapIdCompleter.complete(controller.mapId);
+            },
+            cloudMapId: _kCloudMapId,
+          ),
+        ),
+      );
+
+      // Await mapIdCompleter to finish to make sure map can be created with styledMapId
+      // Styled map
+      await mapIdCompleter.future;
+    },
+  );
+
+  testWidgets('getStyleError reports last error', (WidgetTester tester) async {
+    final Key key = GlobalKey();
+    final Completer<ExampleGoogleMapController> controllerCompleter =
+        Completer<ExampleGoogleMapController>();
+
+    await tester.pumpWidget(Directionality(
+      textDirection: TextDirection.ltr,
+      child: ExampleGoogleMap(
+        key: key,
+        initialCameraPosition: _kInitialCameraPosition,
+        style: '[[[this is an invalid style',
+        onMapCreated: (ExampleGoogleMapController controller) {
+          controllerCompleter.complete(controller);
+        },
+      ),
+    ));
+
+    final ExampleGoogleMapController controller =
+        await controllerCompleter.future;
+    String? error = await controller.getStyleError();
+    for (int i = 0; i < 1000 && error == null; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      error = await controller.getStyleError();
+    }
+    expect(error, isNotNull);
+  });
+
+  testWidgets('getStyleError returns null for a valid style',
+      (WidgetTester tester) async {
+    final Key key = GlobalKey();
+    final Completer<ExampleGoogleMapController> controllerCompleter =
+        Completer<ExampleGoogleMapController>();
+
+    await tester.pumpWidget(Directionality(
+      textDirection: TextDirection.ltr,
+      child: ExampleGoogleMap(
+        key: key,
+        initialCameraPosition: _kInitialCameraPosition,
+        // An empty array is the simplest valid style.
+        style: '[]',
+        onMapCreated: (ExampleGoogleMapController controller) {
+          controllerCompleter.complete(controller);
+        },
+      ),
+    ));
+
+    final ExampleGoogleMapController controller =
+        await controllerCompleter.future;
+    final String? error = await controller.getStyleError();
+    expect(error, isNull);
+  });
 }
 
 class _DebugTileProvider implements TileProvider {
@@ -1226,4 +1390,27 @@ class _DebugTileProvider implements TileProvider {
         .then((ByteData? byteData) => byteData!.buffer.asUint8List());
     return Tile(width, height, byteData);
   }
+}
+
+Marker _copyMarkerWithClusterManagerId(
+    Marker marker, ClusterManagerId? clusterManagerId) {
+  return Marker(
+    markerId: marker.markerId,
+    alpha: marker.alpha,
+    anchor: marker.anchor,
+    consumeTapEvents: marker.consumeTapEvents,
+    draggable: marker.draggable,
+    flat: marker.flat,
+    icon: marker.icon,
+    infoWindow: marker.infoWindow,
+    position: marker.position,
+    rotation: marker.rotation,
+    visible: marker.visible,
+    zIndex: marker.zIndex,
+    onTap: marker.onTap,
+    onDragStart: marker.onDragStart,
+    onDrag: marker.onDrag,
+    onDragEnd: marker.onDragEnd,
+    clusterManagerId: clusterManagerId,
+  );
 }

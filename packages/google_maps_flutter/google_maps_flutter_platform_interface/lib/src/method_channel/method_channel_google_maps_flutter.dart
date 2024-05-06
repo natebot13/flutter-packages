@@ -171,28 +171,29 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
     return _events(mapId).whereType<MapPointOfInterestTapEvent>();
   }
 
+  @override
+  Stream<ClusterTapEvent> onClusterTap({required int mapId}) {
+    return _events(mapId).whereType<ClusterTapEvent>();
+  }
+
   Future<dynamic> _handleMethodCall(MethodCall call, int mapId) async {
     switch (call.method) {
       case 'camera#onMoveStarted':
         _mapEventStreamController.add(CameraMoveStartedEvent(mapId));
-        break;
       case 'camera#onMove':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(CameraMoveEvent(
           mapId,
           CameraPosition.fromMap(arguments['position'])!,
         ));
-        break;
       case 'camera#onIdle':
         _mapEventStreamController.add(CameraIdleEvent(mapId));
-        break;
       case 'marker#onTap':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MarkerTapEvent(
           mapId,
           MarkerId(arguments['markerId']! as String),
         ));
-        break;
       case 'marker#onDragStart':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MarkerDragStartEvent(
@@ -200,7 +201,6 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
           LatLng.fromJson(arguments['position'])!,
           MarkerId(arguments['markerId']! as String),
         ));
-        break;
       case 'marker#onDrag':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MarkerDragEvent(
@@ -208,7 +208,6 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
           LatLng.fromJson(arguments['position'])!,
           MarkerId(arguments['markerId']! as String),
         ));
-        break;
       case 'marker#onDragEnd':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MarkerDragEndEvent(
@@ -216,28 +215,24 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
           LatLng.fromJson(arguments['position'])!,
           MarkerId(arguments['markerId']! as String),
         ));
-        break;
       case 'infoWindow#onTap':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(InfoWindowTapEvent(
           mapId,
           MarkerId(arguments['markerId']! as String),
         ));
-        break;
       case 'polyline#onTap':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(PolylineTapEvent(
           mapId,
           PolylineId(arguments['polylineId']! as String),
         ));
-        break;
       case 'polygon#onTap':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(PolygonTapEvent(
           mapId,
           PolygonId(arguments['polygonId']! as String),
         ));
-        break;
       case 'circle#onTap':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(CircleTapEvent(
@@ -262,14 +257,12 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
           mapId,
           LatLng.fromJson(arguments['position'])!,
         ));
-        break;
       case 'map#onLongPress':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MapLongPressEvent(
           mapId,
           LatLng.fromJson(arguments['position'])!,
         ));
-        break;
       case 'tileOverlay#getTile':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         final Map<TileOverlayId, TileOverlay>? tileOverlaysForThisMap =
@@ -287,6 +280,36 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
           arguments['zoom'] as int?,
         );
         return tile.toJson();
+      case 'cluster#onTap':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
+        final ClusterManagerId clusterManagerId =
+            ClusterManagerId(arguments['clusterManagerId']! as String);
+        final LatLng position = LatLng.fromJson(arguments['position'])!;
+
+        final Map<String, List<dynamic>> latLngData =
+            (arguments['bounds']! as Map<dynamic, dynamic>).map(
+                (dynamic key, dynamic object) =>
+                    MapEntry<String, List<dynamic>>(
+                        key as String, object as List<dynamic>));
+
+        final LatLngBounds bounds = LatLngBounds(
+            northeast: LatLng.fromJson(latLngData['northeast'])!,
+            southwest: LatLng.fromJson(latLngData['southwest'])!);
+
+        final List<MarkerId> markerIds =
+            (arguments['markerIds']! as List<dynamic>)
+                .map((dynamic markerId) => MarkerId(markerId as String))
+                .toList();
+
+        _mapEventStreamController.add(ClusterTapEvent(
+          mapId,
+          Cluster(
+            clusterManagerId,
+            markerIds,
+            position: position,
+            bounds: bounds,
+          ),
+        ));
       default:
         throw MissingPluginException();
     }
@@ -373,6 +396,17 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
     return channel(mapId).invokeMethod<void>(
       'tileOverlays#update',
       updates.toJson(),
+    );
+  }
+
+  @override
+  Future<void> updateClusterManagers(
+    ClusterManagerUpdates clusterManagerUpdates, {
+    required int mapId,
+  }) {
+    return channel(mapId).invokeMethod<void>(
+      'clusterManagers#update',
+      clusterManagerUpdates.toJson(),
     );
   }
 
@@ -614,6 +648,7 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
     Set<Polyline> polylines = const <Polyline>{},
     Set<Circle> circles = const <Circle>{},
     Set<TileOverlay> tileOverlays = const <TileOverlay>{},
+    Set<ClusterManager> clusterManagers = const <ClusterManager>{},
     Set<Factory<OneSequenceGestureRecognizer>>? gestureRecognizers,
     Map<String, dynamic> mapOptions = const <String, dynamic>{},
   }) {
@@ -628,6 +663,7 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
           polygons: polygons,
           polylines: polylines,
           circles: circles,
+          clusterManagers: clusterManagers,
           tileOverlays: tileOverlays),
       mapOptions: mapOptions,
     );
@@ -643,6 +679,7 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
     Set<Polyline> polylines = const <Polyline>{},
     Set<Circle> circles = const <Circle>{},
     Set<TileOverlay> tileOverlays = const <TileOverlay>{},
+    Set<ClusterManager> clusterManagers = const <ClusterManager>{},
     Set<Factory<OneSequenceGestureRecognizer>>? gestureRecognizers,
     Map<String, dynamic> mapOptions = const <String, dynamic>{},
   }) {
@@ -656,6 +693,7 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
       polylines: polylines,
       circles: circles,
       tileOverlays: tileOverlays,
+      clusterManagers: clusterManagers,
       gestureRecognizers: gestureRecognizers,
       mapOptions: mapOptions,
     );

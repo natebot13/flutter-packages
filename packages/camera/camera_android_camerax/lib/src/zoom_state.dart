@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/services.dart' show BinaryMessenger;
+import 'package:meta/meta.dart' show immutable;
 
 import 'android_camera_camerax_flutter_api_impls.dart';
 import 'camerax_library.g.dart';
@@ -12,8 +13,9 @@ import 'java_object.dart';
 /// Represents zoom related information of a camera.
 ///
 /// See https://developer.android.com/reference/androidx/camera/core/ZoomState.
+@immutable
 class ZoomState extends JavaObject {
-  /// Constructs a [CameraInfo] that is not automatically attached to a native object.
+  /// Constructs a [ZoomState] that is not automatically attached to a native object.
   ZoomState.detached(
       {super.binaryMessenger,
       super.instanceManager,

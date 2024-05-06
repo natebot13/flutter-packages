@@ -1,5 +1,19 @@
-## NEXT
+## 2.2.2
 
+* Updates minSdkVersion to 19.
+* Updates minimum supported SDK version to Flutter 3.16/Dart 3.2.
+* Updates compileSdk version to 34.
+* Updates mockito to 5.2.0.
+
+## 2.2.1
+
+* Adds pub topics to package metadata.
+* Updates minimum supported SDK version to Flutter 3.7/Dart 2.19.
+* Deletes deprecated splash screen meta-data element.
+
+## 2.2.0
+
+* Adds `clearWithParameters` and `getAllWithParameters` methods.
 * Updates minimum supported SDK version to Flutter 3.3/Dart 2.18.
 
 ## 2.1.4

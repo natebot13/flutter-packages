@@ -2,10 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// TODO(a14n): remove this import once Flutter 3.1 or later reaches stable (including flutter/flutter#105648)
-// ignore: unnecessary_import
-import 'dart:ui' show Brightness;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart' show PlatformException;
@@ -239,12 +235,11 @@ void main() {
         ..setResponse(true);
 
       final TestWidgetsFlutterBinding binding =
-          _anonymize(TestWidgetsFlutterBinding.ensureInitialized())!
-              as TestWidgetsFlutterBinding;
+          TestWidgetsFlutterBinding.ensureInitialized();
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-      // TODO(goderbauer): Migrate to binding.renderViews when that is available in the oldest supported stable.
       final RenderView renderView =
-          binding.renderView; // ignore: deprecated_member_use
+          RenderView(view: binding.platformDispatcher.implicitView!);
+      binding.addRenderView(renderView);
       renderView.automaticSystemUiAdjustment = true;
       final Future<bool> launchResult =
           launch('http://flutter.dev/', statusBarBrightness: Brightness.dark);
@@ -254,6 +249,7 @@ void main() {
       expect(renderView.automaticSystemUiAdjustment, isFalse);
       await launchResult;
       expect(renderView.automaticSystemUiAdjustment, isTrue);
+      binding.removeRenderView(renderView);
     });
 
     test('sets automaticSystemUiAdjustment to not be null', () async {
@@ -271,12 +267,11 @@ void main() {
         ..setResponse(true);
 
       final TestWidgetsFlutterBinding binding =
-          _anonymize(TestWidgetsFlutterBinding.ensureInitialized())!
-              as TestWidgetsFlutterBinding;
+          TestWidgetsFlutterBinding.ensureInitialized();
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
-      // TODO(goderbauer): Migrate to binding.renderViews when that is available in the oldest supported stable.
       final RenderView renderView =
-          binding.renderView; // ignore: deprecated_member_use
+          RenderView(view: binding.platformDispatcher.implicitView!);
+      binding.addRenderView(renderView);
       expect(renderView.automaticSystemUiAdjustment, true);
       final Future<bool> launchResult =
           launch('http://flutter.dev/', statusBarBrightness: Brightness.dark);
@@ -286,6 +281,7 @@ void main() {
       expect(renderView.automaticSystemUiAdjustment, true);
       await launchResult;
       expect(renderView.automaticSystemUiAdjustment, true);
+      binding.removeRenderView(renderView);
     });
 
     test('open non-parseable url', () async {
@@ -325,9 +321,3 @@ void main() {
     });
   });
 }
-
-/// This removes the type information from a value so that it can be cast
-/// to another type even if that cast is redundant.
-/// We use this so that APIs whose type have become more descriptive can still
-/// be used on the stable branch where they require a cast.
-Object? _anonymize<T>(T? value) => value;

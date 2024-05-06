@@ -6,9 +6,8 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/src/configuration.dart';
+import 'package:go_router/go_router.dart';
 import 'package:go_router/src/match.dart';
-import 'package:go_router/src/router.dart';
 
 import 'test_helpers.dart';
 
@@ -22,9 +21,8 @@ void main() {
               const Placeholder()),
     ];
 
-    final GoRouter router = await createRouter(routes, tester);
-    router.go('/page-0');
-    await tester.pumpAndSettle();
+    final GoRouter router =
+        await createRouter(routes, tester, initialLocation: '/page-0');
 
     final RouteMatchList matches = router.routerDelegate.currentConfiguration;
     expect(matches.toString(), contains('/page-0'));
@@ -37,35 +35,35 @@ void main() {
           const Placeholder(),
     );
     final Map<String, String> params1 = <String, String>{};
-    final RouteMatch match1 = RouteMatch.match(
+    final List<RouteMatchBase> match1 = RouteMatchBase.match(
       route: route,
-      remainingLocation: '/page-0',
-      matchedLocation: '',
+      uri: Uri.parse('/page-0'),
+      rootNavigatorKey: GlobalKey<NavigatorState>(),
       pathParameters: params1,
-    )!;
+    );
 
     final Map<String, String> params2 = <String, String>{};
-    final RouteMatch match2 = RouteMatch.match(
+    final List<RouteMatchBase> match2 = RouteMatchBase.match(
       route: route,
-      remainingLocation: '/page-0',
-      matchedLocation: '',
+      uri: Uri.parse('/page-0'),
+      rootNavigatorKey: GlobalKey<NavigatorState>(),
       pathParameters: params2,
-    )!;
+    );
 
     final RouteMatchList matches1 = RouteMatchList(
-      matches: <RouteMatch>[match1],
+      matches: match1,
       uri: Uri.parse(''),
       pathParameters: params1,
     );
 
     final RouteMatchList matches2 = RouteMatchList(
-      matches: <RouteMatch>[match2],
+      matches: match2,
       uri: Uri.parse(''),
       pathParameters: params2,
     );
 
     final RouteMatchList matches3 = RouteMatchList(
-      matches: <RouteMatch>[match2],
+      matches: match2,
       uri: Uri.parse('/page-0'),
       pathParameters: params2,
     );
@@ -75,7 +73,7 @@ void main() {
   });
 
   test('RouteMatchList is encoded and decoded correctly', () {
-    final RouteConfiguration configuration = RouteConfiguration(
+    final RouteConfiguration configuration = createRouteConfiguration(
       routes: <GoRoute>[
         GoRoute(
           path: '/a',

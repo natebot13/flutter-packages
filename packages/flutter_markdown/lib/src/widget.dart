@@ -12,6 +12,18 @@ import 'package:markdown/markdown.dart' as md;
 import '../flutter_markdown.dart';
 import '_functions_io.dart' if (dart.library.html) '_functions_web.dart';
 
+/// Signature for callbacks used by [MarkdownWidget] when
+/// [MarkdownWidget.selectable] is set to true and the user changes selection.
+///
+/// The callback will return the entire block of text available for selection,
+/// along with the current [selection] and the [cause] of the selection change.
+/// This is a wrapper of [SelectionChangedCallback] with additional context
+/// [text] for the caller to process.
+///
+/// Used by [MarkdownWidget.onSelectionChanged]
+typedef MarkdownOnSelectionChangedCallback = void Function(
+    String? text, TextSelection selection, SelectionChangedCause? cause);
+
 /// Signature for callbacks used by [MarkdownWidget] when the user taps a link.
 /// The callback will return the link text, destination, and title from the
 /// Markdown link tag in the document.
@@ -34,7 +46,30 @@ typedef MarkdownCheckboxBuilder = Widget Function(bool value);
 /// Signature for custom bullet widget.
 ///
 /// Used by [MarkdownWidget.bulletBuilder]
-typedef MarkdownBulletBuilder = Widget Function(int index, BulletStyle style);
+typedef MarkdownBulletBuilder = Widget Function(
+  MarkdownBulletParameters parameters,
+);
+
+/// An parameters of [MarkdownBulletBuilder].
+///
+/// Used by [MarkdownWidget.bulletBuilder]
+class MarkdownBulletParameters {
+  /// Creates a new instance of [MarkdownBulletParameters].
+  const MarkdownBulletParameters({
+    required this.index,
+    required this.style,
+    required this.nestLevel,
+  });
+
+  /// The index of the bullet on that nesting level.
+  final int index;
+
+  /// The style of the bullet.
+  final BulletStyle style;
+
+  /// The nest level of the bullet.
+  final int nestLevel;
+}
 
 /// Enumeration sent to the user when calling [MarkdownBulletBuilder]
 ///
@@ -58,6 +93,11 @@ abstract class SyntaxHighlighter {
 
 /// An interface for an element builder.
 abstract class MarkdownElementBuilder {
+  /// For block syntax has to return true.
+  ///
+  /// By default returns false.
+  bool isBlockElement() => false;
+
   /// Called when an Element has been reached, before its children have been
   /// visited.
   void visitElementBefore(md.Element element) {}
@@ -73,10 +113,30 @@ abstract class MarkdownElementBuilder {
   /// Called when an Element has been reached, after its children have been
   /// visited.
   ///
+  /// If [MarkdownWidget.styleSheet] has a style with this tag, it will be
+  /// passed as [preferredStyle].
+  ///
+  /// If parent element has [TextStyle] set, it will be passed as
+  /// [parentStyle].
+  ///
+  /// If a widget build isn't needed, return null.
+  Widget? visitElementAfterWithContext(
+    BuildContext context,
+    md.Element element,
+    TextStyle? preferredStyle,
+    TextStyle? parentStyle,
+  ) {
+    return visitElementAfter(element, preferredStyle);
+  }
+
+  /// Called when an Element has been reached, after its children have been
+  /// visited.
+  ///
   /// If [MarkdownWidget.styleSheet] has a style of this tag, will passing
   /// to [preferredStyle].
   ///
   /// If you needn't build a widget, return null.
+  @Deprecated('Use visitElementAfterWithContext() instead.')
   Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) =>
       null;
 }
@@ -153,6 +213,7 @@ abstract class MarkdownWidget extends StatefulWidget {
     this.styleSheet,
     this.styleSheetTheme = MarkdownStyleSheetBaseTheme.material,
     this.syntaxHighlighter,
+    this.onSelectionChanged,
     this.onTapLink,
     this.onTapText,
     this.imageDirectory,
@@ -195,6 +256,9 @@ abstract class MarkdownWidget extends StatefulWidget {
 
   /// Called when the user taps a link.
   final MarkdownTapLinkCallback? onTapLink;
+
+  /// Called when the user changes selection when [selectable] is set to true.
+  final MarkdownOnSelectionChangedCallback? onSelectionChanged;
 
   /// Default tap handler used when [selectable] is set to true
   final VoidCallback? onTapText;
@@ -333,6 +397,7 @@ class _MarkdownWidgetState extends State<MarkdownWidget>
       paddingBuilders: widget.paddingBuilders,
       fitContent: widget.fitContent,
       listItemCrossAxisAlignment: widget.listItemCrossAxisAlignment,
+      onSelectionChanged: widget.onSelectionChanged,
       onTapText: widget.onTapText,
       softLineBreak: widget.softLineBreak,
     );
@@ -393,11 +458,9 @@ class MarkdownBody extends MarkdownWidget {
     required super.data,
     super.selectable,
     super.styleSheet,
-    // TODO(stuartmorgan): Remove this once 3.0 is no longer part of the
-    // legacy analysis matrix; it's a false positive there.
-    // ignore: avoid_init_to_null
     super.styleSheetTheme = null,
     super.syntaxHighlighter,
+    super.onSelectionChanged,
     super.onTapLink,
     super.onTapText,
     super.imageDirectory,
@@ -450,11 +513,9 @@ class Markdown extends MarkdownWidget {
     required super.data,
     super.selectable,
     super.styleSheet,
-    // TODO(stuartmorgan): Remove this once 3.0 is no longer part of the
-    // legacy analysis matrix; it's a false positive there.
-    // ignore: avoid_init_to_null
     super.styleSheetTheme = null,
     super.syntaxHighlighter,
+    super.onSelectionChanged,
     super.onTapLink,
     super.onTapText,
     super.imageDirectory,

@@ -8,11 +8,23 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
-import '../go_router.dart';
 import 'configuration.dart';
 import 'information_provider.dart';
 import 'logging.dart';
 import 'match.dart';
+import 'router.dart';
+
+/// The function signature of [GoRouteInformationParser.onParserException].
+///
+/// The `routeMatchList` parameter contains the exception explains the issue
+/// occurred.
+///
+/// The returned [RouteMatchList] is used as parsed result for the
+/// [GoRouterDelegate].
+typedef ParserExceptionHandler = RouteMatchList Function(
+  BuildContext context,
+  RouteMatchList routeMatchList,
+);
 
 /// Converts between incoming URLs and a [RouteMatchList] using [RouteMatcher].
 /// Also performs redirection using [RouteRedirector].
@@ -20,10 +32,17 @@ class GoRouteInformationParser extends RouteInformationParser<RouteMatchList> {
   /// Creates a [GoRouteInformationParser].
   GoRouteInformationParser({
     required this.configuration,
+    required this.onParserException,
   }) : _routeMatchListCodec = RouteMatchListCodec(configuration);
 
   /// The route configuration used for parsing [RouteInformation]s.
   final RouteConfiguration configuration;
+
+  /// The exception handler that is called when parser can't handle the incoming
+  /// uri.
+  ///
+  /// This method must return a [RouteMatchList] for the parsed result.
+  final ParserExceptionHandler? onParserException;
 
   final RouteMatchListCodec _routeMatchListCodec;
 
@@ -50,26 +69,53 @@ class GoRouteInformationParser extends RouteInformationParser<RouteMatchList> {
       // the state.
       final RouteMatchList matchList =
           _routeMatchListCodec.decode(state as Map<Object?, Object?>);
-      return debugParserFuture = _redirect(context, matchList);
+      return debugParserFuture = _redirect(context, matchList)
+          .then<RouteMatchList>((RouteMatchList value) {
+        if (value.isError && onParserException != null) {
+          return onParserException!(context, value);
+        }
+        return value;
+      });
     }
 
     late final RouteMatchList initialMatches;
-    initialMatches =
-        // TODO(chunhtai): remove this ignore and migrate the code
-        // https://github.com/flutter/flutter/issues/124045.
-        // ignore: deprecated_member_use, unnecessary_non_null_assertion
-        configuration.findMatch(routeInformation.location!, extra: state.extra);
+    if (routeInformation.uri.hasEmptyPath) {
+      String newUri = '${routeInformation.uri.origin}/';
+      if (routeInformation.uri.hasQuery) {
+        newUri += '?${routeInformation.uri.query}';
+      }
+      if (routeInformation.uri.hasFragment) {
+        newUri += '#${routeInformation.uri.fragment}';
+      }
+      initialMatches = configuration.findMatch(
+        newUri,
+        extra: state.extra,
+      );
+    } else {
+      initialMatches = configuration.findMatch(
+        routeInformation.uri.toString(),
+        extra: state.extra,
+      );
+    }
     if (initialMatches.isError) {
-      // TODO(chunhtai): remove this ignore and migrate the code
-      // https://github.com/flutter/flutter/issues/124045.
-      // ignore: deprecated_member_use
-      log.info('No initial matches: ${routeInformation.location}');
+      log('No initial matches: ${routeInformation.uri.path}');
     }
 
     return debugParserFuture = _redirect(
       context,
       initialMatches,
     ).then<RouteMatchList>((RouteMatchList matchList) {
+      if (matchList.isError && onParserException != null) {
+        return onParserException!(context, matchList);
+      }
+
+      assert(() {
+        if (matchList.isNotEmpty) {
+          assert(!matchList.last.route.redirectOnly,
+              'A redirect-only route must redirect to location different from itself.\n The offending route: ${matchList.last.route}');
+        }
+        return true;
+      }());
       return _updateRouteMatchList(
         matchList,
         baseRouteMatchList: state.baseRouteMatchList,
@@ -92,16 +138,27 @@ class GoRouteInformationParser extends RouteInformationParser<RouteMatchList> {
     if (configuration.isEmpty) {
       return null;
     }
+    String? location;
     if (GoRouter.optionURLReflectsImperativeAPIs &&
-        configuration.matches.last is ImperativeRouteMatch) {
-      configuration =
-          (configuration.matches.last as ImperativeRouteMatch).matches;
+        (configuration.matches.last is ImperativeRouteMatch ||
+            configuration.matches.last is ShellRouteMatch)) {
+      RouteMatchBase route = configuration.matches.last;
+
+      while (route is! ImperativeRouteMatch) {
+        if (route is ShellRouteMatch && route.matches.isNotEmpty) {
+          route = route.matches.last;
+        } else {
+          break;
+        }
+      }
+
+      if (route case final ImperativeRouteMatch safeRoute) {
+        location = safeRoute.matches.uri.toString();
+      }
     }
+
     return RouteInformation(
-      // TODO(chunhtai): remove this ignore and migrate the code
-      // https://github.com/flutter/flutter/issues/124045.
-      // ignore: deprecated_member_use
-      location: configuration.uri.toString(),
+      uri: Uri.parse(location ?? configuration.uri.toString()),
       state: _routeMatchListCodec.encode(configuration),
     );
   }
@@ -151,6 +208,11 @@ class GoRouteInformationParser extends RouteInformationParser<RouteMatchList> {
             );
       case NavigatingType.go:
         return newMatchList;
+      case NavigatingType.restore:
+        // Still need to consider redirection.
+        return baseRouteMatchList!.uri.toString() != newMatchList.uri.toString()
+            ? newMatchList
+            : baseRouteMatchList;
     }
   }
 

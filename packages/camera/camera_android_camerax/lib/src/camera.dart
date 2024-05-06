@@ -3,8 +3,10 @@
 // found in the LICENSE file.
 
 import 'package:flutter/services.dart' show BinaryMessenger;
+import 'package:meta/meta.dart' show immutable;
 
 import 'android_camera_camerax_flutter_api_impls.dart';
+import 'camera_control.dart';
 import 'camera_info.dart';
 import 'camerax_library.g.dart';
 import 'instance_manager.dart';
@@ -14,6 +16,7 @@ import 'java_object.dart';
 /// camera, and publich the state of the camera.
 ///
 /// See https://developer.android.com/reference/androidx/camera/core/Camera.
+@immutable
 class Camera extends JavaObject {
   /// Constructs a [Camera] that is not automatically attached to a native object.
   Camera.detached(
@@ -21,27 +24,33 @@ class Camera extends JavaObject {
       : super.detached(
             binaryMessenger: binaryMessenger,
             instanceManager: instanceManager) {
-    _api = CameraHostApiImpl(
+    _api = _CameraHostApiImpl(
         binaryMessenger: binaryMessenger, instanceManager: instanceManager);
     AndroidCameraXCameraFlutterApis.instance.ensureSetUp();
   }
 
-  late final CameraHostApiImpl _api;
+  late final _CameraHostApiImpl _api;
 
-  /// Retrieve the [CameraInfo] instance that contains information about this
+  /// Retrieves the [CameraInfo] instance that contains information about this
   /// instance.
   Future<CameraInfo> getCameraInfo() async {
     return _api.getCameraInfoFromInstance(this);
   }
+
+  /// Retrieves the [CameraControl] instance that provides asynchronous
+  /// operations like zoom and focus & metering for this instance.
+  Future<CameraControl> getCameraControl() async {
+    return _api.getCameraControlFromInstance(this);
+  }
 }
 
 /// Host API implementation of [Camera].
-class CameraHostApiImpl extends CameraHostApi {
-  /// Constructs a [CameraHostApiImpl].
+class _CameraHostApiImpl extends CameraHostApi {
+  /// Constructs a [_CameraHostApiImpl].
   ///
   /// An [instanceManager] is typically passed when a copy of an instance
   /// contained by an [InstanceManager] is being created.
-  CameraHostApiImpl({this.binaryMessenger, InstanceManager? instanceManager})
+  _CameraHostApiImpl({this.binaryMessenger, InstanceManager? instanceManager})
       : super(binaryMessenger: binaryMessenger) {
     this.instanceManager = instanceManager ?? JavaObject.globalInstanceManager;
   }
@@ -55,13 +64,22 @@ class CameraHostApiImpl extends CameraHostApi {
   /// Maintains instances stored to communicate with native language objects.
   late final InstanceManager instanceManager;
 
-  /// Gets the [CameraInfo] associated with the specified instance of [Camera].
+  /// Gets the [CameraInfo] associated with the specified [Camera] instance.
   Future<CameraInfo> getCameraInfoFromInstance(Camera instance) async {
     final int identifier = instanceManager.getIdentifier(instance)!;
     final int cameraInfoId = await getCameraInfo(identifier);
 
     return instanceManager
         .getInstanceWithWeakReference<CameraInfo>(cameraInfoId)!;
+  }
+
+  /// Gets the [CameraControl] associated with the specified [Camera] instance.
+  Future<CameraControl> getCameraControlFromInstance(Camera instance) async {
+    final int identifier = instanceManager.getIdentifier(instance)!;
+    final int cameraControlId = await getCameraControl(identifier);
+
+    return instanceManager
+        .getInstanceWithWeakReference<CameraControl>(cameraControlId)!;
   }
 }
 

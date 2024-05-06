@@ -1,5 +1,32 @@
 ## NEXT
 
+* Updates minimum iOS version to 12.0 and minimum Flutter version to 3.16.6.
+
+## 2.3.5
+
+* Adds privacy manifest.
+* Updates minimum supported SDK version to Flutter 3.10/Dart 3.0.
+
+## 2.3.4
+
+* Adds pub topics to package metadata.
+* Updates minimum supported SDK version to Flutter 3.7/Dart 2.19.
+
+## 2.3.3
+
+* Updates Pigeon-generated code to avoid conflicts with `shared_preferences_ios`.
+
+## 2.3.2
+
+* Updates to the latest version of `pigeon`.
+
+## 2.3.1
+
+* Fixes variable binding bug on older versions of Xcode.
+
+## 2.3.0
+
+* Adds `clearWithParameters` and `getAllWithParameters` methods.
 * Updates minimum supported macOS version to 10.14.
 * Updates minimum supported SDK version to Flutter 3.3/Dart 2.18.
 

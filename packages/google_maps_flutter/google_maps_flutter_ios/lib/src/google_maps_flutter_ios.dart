@@ -243,7 +243,6 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
           mapId,
           LatLng.fromJson(arguments['position'])!,
         ));
-        break;
       case 'map#onPointOfInterestTap':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MapPointOfInterestTapEvent(
@@ -254,7 +253,6 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
             arguments['placeId']! as String,
           ),
         ));
-        break;
       case 'tileOverlay#getTile':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         final Map<TileOverlayId, TileOverlay>? tileOverlaysForThisMap =

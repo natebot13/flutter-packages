@@ -167,7 +167,8 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
   }
 
   @override
-  Stream<MapPointOfInterestTapEvent> onPointOfInterestTap({required int mapId}) {
+  Stream<MapPointOfInterestTapEvent> onPointOfInterestTap(
+      {required int mapId}) {
     return _events(mapId).whereType<MapPointOfInterestTapEvent>();
   }
 
@@ -244,9 +245,7 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MapPointOfInterestTapEvent(
           mapId,
-          PointOfInterest(
-            LatLng.fromJson(arguments['position'])!,
-            arguments['name']! as String,
+          PointOfInterestId(
             arguments['placeId']! as String,
           ),
         ));

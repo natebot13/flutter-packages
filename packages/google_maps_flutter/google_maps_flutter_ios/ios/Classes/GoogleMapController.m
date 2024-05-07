@@ -586,8 +586,6 @@
                 location:(CLLocationCoordinate2D)location {
   [self.channel invokeMethod:@"map#onPointOfInterestTap"
                    arguments:@{
-                     @"position" : [FLTGoogleMapJSONConversions arrayFromLocation:location],
-                     @"name" : name,
                      @"placeId" : placeID,
                    }];
 }

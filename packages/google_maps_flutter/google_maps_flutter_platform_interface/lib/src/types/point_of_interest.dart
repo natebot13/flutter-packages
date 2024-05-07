@@ -2,31 +2,73 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/foundation.dart' show immutable;
+
 import 'types.dart';
 
+/// Uniquely identifies a [PointOfInterest] among [GoogleMap] POIs.
+@immutable
+class PointOfInterestId extends MapsObjectId<PointOfInterest> {
+  /// Creates an immutable identifier for a [PointOfInterest].
+  const PointOfInterestId(super.value);
+}
+
 /// A pair of latitude and longitude coordinates, stored as degrees.
-class PointOfInterest {
+@immutable
+class PointOfInterest implements MapsObject<PointOfInterest> {
   /// Creates a PointOfInterest.
-  PointOfInterest(this.position, this.name, this.placeId);
+
+  const PointOfInterest({
+    required this.placeId,
+    this.name = '',
+    this.position = const LatLng(0.0, 0.0),
+  });
+
+  /// The placeId of the POI.
+  final PointOfInterestId placeId;
+
+  @override
+  PointOfInterestId get mapsId => placeId;
 
   /// The location of the POI.
   final LatLng position;
 
   /// The human-readable name of the POI as displayed on the map.
-  String? name;
+  final String name;
 
-  /// The placeId of the POI.
-  final String placeId;
+  /// Creates a new [PointOfInterest] object whose values are the same as this instance,
+  /// unless overwritten by the specified parameters.
+  PointOfInterest copyWith({
+    PointOfInterestId? placeId,
+    LatLng? position,
+    String? name,
+  }) {
+    return PointOfInterest(
+      placeId: placeId ?? this.placeId,
+      position: position ?? this.position,
+      name: name ?? this.name,
+    );
+  }
 
-  /// Initialize a LatLng from an \[lat, lng\] array.
-  static PointOfInterest? fromJson(Object? json) {
-    if (json == null) {
-      return null;
+  /// Creates a new [PointOfInterest] object whose values are the same as this instance.
+  @override
+  PointOfInterest clone() => copyWith();
+
+  /// Converts this object to something serializable in JSON.
+  @override
+  Object toJson() {
+    final Map<String, Object> json = <String, Object>{};
+
+    void addIfPresent(String fieldName, Object? value) {
+      if (value != null) {
+        json[fieldName] = value;
+      }
     }
-    assert(json is Map<String, dynamic> && json.length == 3);
-    final Map<String, dynamic> data = json as Map<String, dynamic>;
-    return PointOfInterest(LatLng.fromJson(data['position'])!,
-        data['name'].toString(), data['placeId'].toString());
+
+    addIfPresent('placeId', placeId.value);
+    addIfPresent('position', position.toJson());
+    addIfPresent('name', name);
+    return json;
   }
 
   @override

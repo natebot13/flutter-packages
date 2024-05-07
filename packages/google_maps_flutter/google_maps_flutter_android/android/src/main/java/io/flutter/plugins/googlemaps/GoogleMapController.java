@@ -595,8 +595,6 @@ class GoogleMapController
 
   public void onPoiClick(PointOfInterest poi) {
     final Map<String, Object> arguments = new HashMap<>(2);
-    arguments.put("position", Convert.latLngToJson(poi.latLng));
-    arguments.put("name", poi.name);
     arguments.put("placeId", poi.placeId);
     methodChannel.invokeMethod("map#onPointOfInterestTap", arguments);
   }

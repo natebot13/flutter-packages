@@ -246,7 +246,7 @@ class GoogleMap extends StatefulWidget {
   final ArgumentCallback<LatLng>? onLongPress;
 
   /// Called every time a [PointOfInterest] is clicked.
-  final ArgumentCallback<PointOfInterest>? onPointOfInterestTap;
+  final ArgumentCallback<PointOfInterestId>? onPointOfInterestTap;
 
   /// True if a "My Location" layer should be shown on the map.
   ///
@@ -548,10 +548,11 @@ class _GoogleMapState extends State<GoogleMap> {
     }
   }
 
-  void onPointOfInterestTap(PointOfInterest poi) {
-    final ArgumentCallback<PointOfInterest>? onPointOfInterestTap = widget.onPointOfInterestTap;
+  void onPointOfInterestTap(PointOfInterestId placeId) {
+    final ArgumentCallback<PointOfInterestId>? onPointOfInterestTap =
+        widget.onPointOfInterestTap;
     if (onPointOfInterestTap != null) {
-      onPointOfInterestTap(poi);
+      onPointOfInterestTap(placeId);
     }
   }
 }

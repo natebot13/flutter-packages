@@ -349,6 +349,9 @@ abstract class MapsCallbackApi {
   /// Called when a polyline is tapped.
   void onPolylineTap(String polylineId);
 
+  /// Called when a map place is tapped.
+  void onPointOfInterestTap(String placeId);
+
   /// Called to get data for a map tile.
   @async
   PlatformTile getTileOverlayTile(

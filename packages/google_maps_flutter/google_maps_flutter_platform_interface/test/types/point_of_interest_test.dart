@@ -11,14 +11,14 @@ void main() {
 
   group('PointOfInterest constructor', () {
     test('constructor defaults', () {
-      const LatLng position = LatLng(0, 0);
-      const String name = 'name';
       const String placeId = 'placeId';
 
-      final PointOfInterest poi = PointOfInterest(position, name, placeId);
+      const PointOfInterest poi = PointOfInterest(
+        placeId: PointOfInterestId(placeId),
+      );
 
       expect(poi.position, equals(const LatLng(0.0, 0.0)));
-      expect(poi.name, equals('name'));
+      expect(poi.name, equals(''));
       expect(poi.placeId, equals('placeId'));
     });
   });

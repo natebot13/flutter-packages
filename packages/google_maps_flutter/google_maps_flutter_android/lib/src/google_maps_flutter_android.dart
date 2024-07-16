@@ -225,130 +225,6 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
     return _events(mapId).whereType<ClusterTapEvent>();
   }
 
-  Future<dynamic> _handleMethodCall(MethodCall call, int mapId) async {
-    switch (call.method) {
-      case 'camera#onMoveStarted':
-        _mapEventStreamController.add(CameraMoveStartedEvent(mapId));
-      case 'camera#onMove':
-        final Map<String, Object?> arguments = _getArgumentDictionary(call);
-        _mapEventStreamController.add(CameraMoveEvent(
-          mapId,
-          CameraPosition.fromMap(arguments['position'])!,
-        ));
-      case 'camera#onIdle':
-        _mapEventStreamController.add(CameraIdleEvent(mapId));
-      case 'marker#onTap':
-        final Map<String, Object?> arguments = _getArgumentDictionary(call);
-        _mapEventStreamController.add(MarkerTapEvent(
-          mapId,
-          MarkerId(arguments['markerId']! as String),
-        ));
-      case 'marker#onDragStart':
-        final Map<String, Object?> arguments = _getArgumentDictionary(call);
-        _mapEventStreamController.add(MarkerDragStartEvent(
-          mapId,
-          LatLng.fromJson(arguments['position'])!,
-          MarkerId(arguments['markerId']! as String),
-        ));
-      case 'marker#onDrag':
-        final Map<String, Object?> arguments = _getArgumentDictionary(call);
-        _mapEventStreamController.add(MarkerDragEvent(
-          mapId,
-          LatLng.fromJson(arguments['position'])!,
-          MarkerId(arguments['markerId']! as String),
-        ));
-      case 'marker#onDragEnd':
-        final Map<String, Object?> arguments = _getArgumentDictionary(call);
-        _mapEventStreamController.add(MarkerDragEndEvent(
-          mapId,
-          LatLng.fromJson(arguments['position'])!,
-          MarkerId(arguments['markerId']! as String),
-        ));
-      case 'infoWindow#onTap':
-        final Map<String, Object?> arguments = _getArgumentDictionary(call);
-        _mapEventStreamController.add(InfoWindowTapEvent(
-          mapId,
-          MarkerId(arguments['markerId']! as String),
-        ));
-      case 'polyline#onTap':
-        final Map<String, Object?> arguments = _getArgumentDictionary(call);
-        _mapEventStreamController.add(PolylineTapEvent(
-          mapId,
-          PolylineId(arguments['polylineId']! as String),
-        ));
-      case 'polygon#onTap':
-        final Map<String, Object?> arguments = _getArgumentDictionary(call);
-        _mapEventStreamController.add(PolygonTapEvent(
-          mapId,
-          PolygonId(arguments['polygonId']! as String),
-        ));
-      case 'circle#onTap':
-        final Map<String, Object?> arguments = _getArgumentDictionary(call);
-        _mapEventStreamController.add(CircleTapEvent(
-          mapId,
-          CircleId(arguments['circleId']! as String),
-        ));
-      case 'map#onTap':
-        final Map<String, Object?> arguments = _getArgumentDictionary(call);
-        _mapEventStreamController.add(MapTapEvent(
-          mapId,
-          LatLng.fromJson(arguments['position'])!,
-        ));
-      case 'map#onLongPress':
-        final Map<String, Object?> arguments = _getArgumentDictionary(call);
-        _mapEventStreamController.add(MapLongPressEvent(
-          mapId,
-          LatLng.fromJson(arguments['position'])!,
-        ));
-      case 'map#onPointOfInterestTap':
-        final Map<String, Object?> arguments = _getArgumentDictionary(call);
-        _mapEventStreamController.add(MapPointOfInterestTapEvent(
-          mapId,
-          PointOfInterestId(
-            arguments['placeId']! as String,
-          ),
-        ));
-      case 'tileOverlay#getTile':
-        final Map<String, Object?> arguments = _getArgumentDictionary(call);
-        final Map<TileOverlayId, TileOverlay>? tileOverlaysForThisMap =
-            _tileOverlays[mapId];
-        final String tileOverlayId = arguments['tileOverlayId']! as String;
-        final TileOverlay? tileOverlay =
-            tileOverlaysForThisMap?[TileOverlayId(tileOverlayId)];
-        final TileProvider? tileProvider = tileOverlay?.tileProvider;
-        if (tileProvider == null) {
-          return TileProvider.noTile.toJson();
-        }
-        final Tile tile = await tileProvider.getTile(
-          arguments['x']! as int,
-          arguments['y']! as int,
-          arguments['zoom'] as int?,
-        );
-        return tile.toJson();
-      case 'cluster#onTap':
-        final Map<String, Object?> arguments = _getArgumentDictionary(call);
-        final Cluster cluster = parseCluster(
-            arguments['clusterManagerId']! as String,
-            arguments['position']!,
-            arguments['bounds']! as Map<dynamic, dynamic>,
-            arguments['markerIds']! as List<dynamic>);
-        _mapEventStreamController.add(ClusterTapEvent(
-          mapId,
-          cluster,
-        ));
-      default:
-        throw MissingPluginException();
-    }
-  }
-
-  /// Returns the arguments of [call] as typed string-keyed Map.
-  ///
-  /// This does not do any type validation, so is only safe to call if the
-  /// arguments are known to be a map.
-  Map<String, Object?> _getArgumentDictionary(MethodCall call) {
-    return (call.arguments as Map<Object?, Object?>).cast<String, Object?>();
-  }
-
   @override
   Future<void> updateMapConfiguration(
     MapConfiguration configuration, {
@@ -975,6 +851,12 @@ class HostMapMessageHandler implements MapsCallbackApi {
   void onTap(PlatformLatLng position) {
     streamController
         .add(MapTapEvent(mapId, _latLngFromPlatformLatLng(position)));
+  }
+
+  @override
+  void onPointOfInterestTap(String placeId) {
+    streamController
+        .add(MapPointOfInterestTapEvent(mapId, PointOfInterestId(placeId)));
   }
 }
 

@@ -300,9 +300,7 @@ class GoogleMapController
   }
 
   public void onPoiClick(PointOfInterest poi) {
-    final Map<String, Object> arguments = new HashMap<>(2);
-    arguments.put("placeId", poi.placeId);
-    methodChannel.invokeMethod("map#onPointOfInterestTap", arguments);
+    flutterApi.onPointOfInterestTap(poi.placeId);
   }
 
   @Override

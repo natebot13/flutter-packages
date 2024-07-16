@@ -227,10 +227,16 @@ class GoogleMapController {
       _streamController.add(WebMapReadyEvent(_mapId));
     });
     map.onClick.listen((gmaps.IconMouseEvent event) {
-      assert(event.latLng != null);
-      _streamController.add(
-        MapTapEvent(_mapId, gmLatLngToLatLng(event.latLng!)),
-      );
+      if (event.placeId != null) {
+        _streamController.add(
+          MapPointOfInterestTapEvent(_mapId, PointOfInterestId(event.placeId!)),
+        );
+      } else {
+        assert(event.latLng != null);
+        _streamController.add(
+          MapTapEvent(_mapId, gmLatLngToLatLng(event.latLng!)),
+        );
+      }
     });
     map.onRightclick.listen((gmaps.MapMouseEvent event) {
       assert(event.latLng != null);

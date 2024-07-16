@@ -300,7 +300,7 @@ class GoogleMapController
   }
 
   public void onPoiClick(PointOfInterest poi) {
-    flutterApi.onPointOfInterestTap(poi.placeId);
+    flutterApi.onPointOfInterestTap(poi.placeId, new NoOpVoidResult());
   }
 
   @Override
